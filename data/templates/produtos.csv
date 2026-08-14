@@ -1,0 +1,3 @@
+codigo;nome;categoria;tipo;marca;fornecedor;custo;venda;estoque_minimo;cor;tamanho;codigo_variacao;quantidade
+CAM-001;Camiseta básica;Feminino;Camiseta;Sir Modas;Fornecedor Exemplo;25,00;59,90;2;Preta;P;CAM-001-PRE-P;5
+CAM-001;Camiseta básica;Feminino;Camiseta;Sir Modas;Fornecedor Exemplo;25,00;59,90;2;Preta;M;CAM-001-PRE-M;6

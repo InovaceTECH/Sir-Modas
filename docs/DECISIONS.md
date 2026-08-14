@@ -12,6 +12,8 @@ Estas decisões formam a baseline do MVP e podem ser revisadas com a proprietár
 | D-06 | Registros operacionais são cancelados/estornados, nunca excluídos | Preserva auditoria de estoque e caixa |
 | D-07 | Produto devolvido só volta ao estoque quando vendável | Evita estoque disponível incorreto |
 | D-08 | Diferença favorável à cliente segue política configurada/observada | A regra comercial ainda precisa de validação |
+| D-09 | Better Auth direto, persistido no Neon | Evita dependência beta vulnerável sem criar autenticação própria |
+| D-10 | Apenas a primeira proprietária pode se cadastrar no MVP | O PRD exclui gestão de usuários e permissões |
 
 ## Pendências para validação
 

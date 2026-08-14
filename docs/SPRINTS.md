@@ -22,13 +22,15 @@
 
 ## Sprint 1 — Fundação operacional
 
+**Status:** implementação concluída; provisionamento do Neon e homologação com credenciais reais pendentes.
+
 **Objetivo:** disponibilizar uma aplicação protegida, conectada ao Neon e configurável para uma única loja.
 
 ### Entregas
 
 - Projeto e ambientes do Neon.
 - Migrations iniciais e dados-base.
-- Login/logout da proprietária com Neon Auth.
+- Login/logout da proprietária com Better Auth persistido no Neon.
 - Proteção de todas as rotas operacionais.
 - Cadastro das configurações da Sir Modas.
 - Layout responsivo, navegação e estados de erro/carregamento.
@@ -49,6 +51,8 @@ A proprietária entra no sistema e visualiza o dashboard vazio com as configura�
 ---
 
 ## Sprint 2 — Catálogo e estoque
+
+**Status:** núcleo funcional concluído localmente; upload direto para o Vercel Blob aguarda o ambiente publicado.
 
 **Objetivo:** permitir cadastrar o estoque físico com tamanho e cor e acompanhar todas as alterações.
 
@@ -78,6 +82,8 @@ A proprietária cadastra uma camiseta com seis variações, confirma uma entrada
 ---
 
 ## Sprint 3 — Vendas e caixa
+
+**Status:** núcleo funcional concluído localmente.
 
 **Objetivo:** registrar uma venda em menos de um minuto, com estoque e financeiro consistentes.
 
@@ -109,6 +115,8 @@ A proprietária abre o caixa, registra uma venda mista, confere a baixa e fecha 
 
 ## Sprint 4 — Clientes e fiado
 
+**Status:** núcleo funcional concluído localmente.
+
 **Objetivo:** tornar visível e confiável todo valor que a loja ainda tem a receber.
 
 ### Entregas
@@ -139,6 +147,8 @@ A proprietária registra uma venda parcialmente fiada e recebe parte do saldo em
 
 ## Sprint 5 — Trocas, dashboard e relatórios
 
+**Status:** núcleo funcional concluído localmente.
+
 **Objetivo:** completar o ciclo pós-venda e transformar os registros em informações úteis.
 
 ### Entregas
@@ -168,6 +178,8 @@ A proprietária troca um item, confere os dois estoques e visualiza o impacto no
 ---
 
 ## Sprint 6 — Estabilização e implantação
+
+**Status:** preparação técnica concluída localmente; credenciais, carga real e publicação pendentes.
 
 **Objetivo:** validar o MVP com dados reais e colocá-lo em operação com segurança.
 

@@ -1,17 +1,29 @@
 import "server-only";
 
-import { neon } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-http";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
-import { getServerEnv } from "@/lib/env";
+import { getDatabaseEnv } from "@/lib/env";
 
 import * as schema from "./schema";
 
-export function getDb() {
-  const { DATABASE_URL } = getServerEnv();
-  const sql = neon(DATABASE_URL);
+function createDatabase() {
+  const { DATABASE_URL } = getDatabaseEnv();
+  const client = postgres(DATABASE_URL, {
+    max: process.env.NODE_ENV === "development" ? 5 : 1,
+    prepare: false,
+  });
 
-  return drizzle({ client: sql, schema });
+  return drizzle({ client, schema });
 }
 
-export type Database = ReturnType<typeof getDb>;
+export type Database = ReturnType<typeof createDatabase>;
+
+const globalDatabase = globalThis as typeof globalThis & {
+  sirModasDatabase?: Database;
+};
+
+export function getDb() {
+  globalDatabase.sirModasDatabase ??= createDatabase();
+  return globalDatabase.sirModasDatabase;
+}

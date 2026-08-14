@@ -1,59 +1,29 @@
-import { AlertTriangle, CircleDollarSign, PackageCheck, ShoppingBag } from "lucide-react";
+import { AlertTriangle, ArrowRight, CircleDollarSign, HandCoins, Plus, ShoppingBag, WalletCards } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/page-header";
+import { requireStore } from "@/features/catalog/server/store-context";
+import { getDashboardData } from "@/features/dashboard/queries/dashboard";
 
-const indicators = [
-  { label: "Vendido hoje", value: "R$ 0,00", note: "Nenhuma venda registrada", icon: CircleDollarSign },
-  { label: "Vendas", value: "0", note: "0 peças vendidas", icon: ShoppingBag },
-  { label: "Estoque baixo", value: "0", note: "Tudo em ordem", icon: AlertTriangle },
-  { label: "Fiado em aberto", value: "R$ 0,00", note: "Nenhuma conta vencida", icon: PackageCheck },
-];
+const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
-export default function DashboardPage() {
-  return (
-    <>
-      <PageHeader
-        title="Como a loja está hoje?"
-        description="Visão rápida das vendas, do caixa, do estoque e dos pagamentos pendentes."
-        action={
-          <Link href="/vendas/nova" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-brand px-5 text-sm font-semibold text-white transition hover:bg-brand-strong">
-            Registrar venda
-          </Link>
-        }
-      />
-
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores do dia">
-        {indicators.map(({ label, value, note, icon: Icon }) => (
-          <article key={label} className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-muted">{label}</p>
-              <span className="grid size-10 place-items-center rounded-xl bg-[#f8e9ef] text-brand">
-                <Icon aria-hidden="true" size={20} />
-              </span>
-            </div>
-            <p className="mt-5 text-2xl font-bold tracking-tight">{value}</p>
-            <p className="mt-1 text-xs text-muted">{note}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-        <article className="rounded-2xl border border-border bg-surface p-6 shadow-sm">
-          <h2 className="font-semibold">Primeiros passos</h2>
-          <p className="mt-2 text-sm leading-6 text-muted">A estrutura está pronta. O próximo sprint conectará o banco e o cadastro real dos produtos.</p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <Link href="/produtos" className="rounded-xl border border-border px-4 py-3 text-sm font-semibold hover:bg-stone-50">Cadastrar produtos</Link>
-            <Link href="/estoque" className="rounded-xl border border-border px-4 py-3 text-sm font-semibold hover:bg-stone-50">Registrar entrada</Link>
-          </div>
-        </article>
-        <article className="rounded-2xl bg-brand p-6 text-white shadow-sm">
-          <p className="text-sm font-medium text-white/75">Situação do caixa</p>
-          <h2 className="mt-2 text-xl font-semibold">Caixa ainda não aberto</h2>
-          <p className="mt-2 text-sm leading-6 text-white/75">Abra o caixa antes de registrar a primeira venda do dia.</p>
-          <Link href="/caixa" className="mt-5 inline-flex rounded-xl bg-white px-4 py-3 text-sm font-semibold text-brand">Abrir caixa</Link>
-        </article>
-      </section>
-    </>
-  );
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ periodo?: string }> }) {
+  const { store } = await requireStore();
+  const params = await searchParams;
+  const period = params.periodo === "week" || params.periodo === "month" ? params.periodo : "today";
+  const periodLabel = period === "month" ? "no mês" : period === "week" ? "na semana" : "hoje";
+  const data = store ? await getDashboardData(store.id, period) : null;
+  const revenue = Number(data?.sales.revenue ?? 0);
+  const saleCount = data?.sales.saleCount ?? 0;
+  const indicators = [
+    { label: `Vendido ${periodLabel}`, value: currency.format(revenue), note: saleCount ? "Vendas confirmadas" : "Nenhuma venda registrada", icon: CircleDollarSign, tone: "brand" },
+    { label: "Vendas", value: String(saleCount), note: saleCount === 1 ? `1 venda ${periodLabel}` : `${saleCount} vendas ${periodLabel}`, icon: ShoppingBag, tone: "neutral" },
+    { label: "Estoque baixo", value: String(data?.stock.lowCount ?? 0), note: data?.stock.outCount ? `${data.stock.outCount} variação(ões) esgotada(s)` : "Sem itens esgotados", icon: AlertTriangle, tone: "warning" },
+    { label: "Fiado em aberto", value: currency.format(Number(data?.receivables.openAmount ?? 0)), note: data?.receivables.overdueCount ? `${currency.format(Number(data.receivables.overdueAmount))} vencido em ${data.receivables.overdueCount} conta(s)` : "Nenhuma conta vencida", icon: HandCoins, tone: data?.receivables.overdueCount ? "warning" : "success" },
+  ];
+  return <><PageHeader title="Olá! Veja como a loja está" description="Vendas, estoque, fiado e situação do caixa em uma visão rápida." action={<Link href="/vendas/nova" className="ui-button-primary"><Plus size={18} /> Registrar venda</Link>} />
+    <nav className="mb-5 flex w-fit rounded-xl border border-border bg-white p-1" aria-label="Período do dashboard">{[["today", "Hoje"], ["week", "Semana"], ["month", "Mês"]].map(([id, label]) => <Link key={id} href={`/inicio?periodo=${id}`} className={period === id ? "rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white" : "rounded-lg px-4 py-2 text-sm font-semibold text-muted hover:text-foreground"}>{label}</Link>)}</nav>
+    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores do dia">{indicators.map(({ label, value, note, icon: Icon, tone }) => <article key={label} className="ui-card p-5"><div className="flex items-center justify-between"><p className="text-sm font-medium text-muted">{label}</p><span className={`grid size-9 place-items-center rounded-lg ${tone === "brand" ? "bg-brand-subtle text-brand-deep" : tone === "success" ? "bg-[#149e6129] text-success-strong" : tone === "warning" ? "bg-amber-50 text-amber-700" : "bg-background text-muted"}`}><Icon size={19} /></span></div><p className="mt-5 text-2xl font-bold tracking-[-0.03em]">{value}</p><p className="mt-1 text-xs text-muted">{note}</p></article>)}</section>
+    <section className="mt-6 grid gap-6 xl:grid-cols-[1.4fr_1fr]"><article className="ui-card overflow-hidden"><div className="flex items-center justify-between border-b border-border px-5 py-4"><div><h2 className="font-semibold">Vendas recentes</h2><p className="mt-1 text-xs text-muted">Últimos registros confirmados</p></div><Link href="/vendas" className="flex items-center gap-1 text-sm font-semibold text-brand-deep">Ver todas <ArrowRight size={16} /></Link></div>{data?.recentSales.length ? <ul className="divide-y divide-border">{data.recentSales.map((sale) => <li key={sale.id} className="grid gap-2 px-5 py-4 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center"><div><Link href={`/vendas/${sale.id}`} className="font-semibold hover:underline">{sale.number}</Link><p className="text-xs text-muted">{sale.source} · {data.pieceCount.get(sale.id) ?? 0} peça(s)</p></div><strong>{currency.format(Number(sale.total))}</strong><time className="text-xs text-muted">{sale.soldAt.toLocaleString("pt-BR")}</time></li>)}</ul> : <div className="px-6 py-14 text-center"><ShoppingBag className="mx-auto text-muted-soft" size={28} /><h3 className="mt-4 font-semibold">Nenhuma venda registrada</h3><p className="mt-1 text-sm text-muted">A primeira venda aparecerá aqui.</p></div>}</article><article className={data?.openCash ? "relative overflow-hidden rounded-xl bg-black p-6 text-white" : "ui-card p-6"}><span className={data?.openCash ? "grid size-10 place-items-center rounded-lg bg-brand text-black" : "grid size-10 place-items-center rounded-lg bg-brand-subtle text-brand-deep"}><WalletCards size={20} /></span><p className={data?.openCash ? "mt-7 text-sm text-white/60" : "mt-7 text-sm text-muted"}>Situação do caixa</p><h2 className="mt-2 text-xl font-bold">{data?.openCash ? "Caixa aberto" : "Caixa fechado"}</h2><p className={data?.openCash ? "mt-2 text-sm leading-6 text-white/65" : "mt-2 text-sm leading-6 text-muted"}>{data?.openCash ? `Aberto em ${data.openCash.openedAt.toLocaleString("pt-BR")}. Pronto para registrar vendas.` : "Abra o caixa antes de registrar a primeira venda do dia."}</p><Link href="/caixa" className={data?.openCash ? "mt-6 inline-flex min-h-11 items-center rounded-lg bg-brand px-5 text-sm font-semibold text-black" : "ui-button-primary mt-6"}>{data?.openCash ? "Acompanhar caixa" : "Abrir caixa"}<ArrowRight className="ml-2" size={17} /></Link></article></section>
+  </>;
 }

@@ -6,20 +6,20 @@ Sistema web de gestão operacional e vendas da Sir Modas Store.
 
 - Next.js com App Router e TypeScript
 - Tailwind CSS
-- PostgreSQL no Neon
+- PostgreSQL local com Docker e Neon na publicação
 - Drizzle ORM e Drizzle Kit
-- Neon Auth (integração prevista no Sprint 1)
+- Better Auth com sessões armazenadas no PostgreSQL do Neon
 - Vercel Blob para fotos (integração prevista no Sprint 2)
 - Vitest e Testing Library
 
 ## Desenvolvimento local
 
-1. Copie `.env.example` para `.env.local`.
-2. Configure `DATABASE_URL` com a conexão do Neon.
-3. Instale as dependências com `npm install`.
+1. Inicie o banco com `docker compose up -d`.
+2. Execute `npm run db:migrate`.
+3. Execute `npm run db:seed:local` após criar o perfil local.
 4. Execute `npm run dev`.
 
-O dashboard estrutural funciona sem banco. Operações persistentes serão implementadas por sprint.
+Com `AUTH_BYPASS_LOCAL=true`, o perfil da Sir Modas é carregado automaticamente apenas em desenvolvimento e no endereço local.
 
 ## Comandos
 
@@ -33,9 +33,17 @@ O dashboard estrutural funciona sem banco. Operações persistentes serão imple
 | `npm run db:generate` | Gera migrations a partir do schema |
 | `npm run db:migrate` | Aplica migrations no banco configurado |
 | `npm run db:studio` | Abre o explorador de dados do Drizzle |
+| `npm run db:seed:local` | Prepara loja, categorias e tipos no banco local |
+| `npm run import:products -- arquivo.csv` | Valida uma carga inicial sem gravar |
+| `npm run import:products -- arquivo.csv --apply` | Importa produtos e novas variações |
+| `npm run audit:data` | Procura divergências operacionais no banco |
+| `npm run verify:production` | Confere o ambiente antes da publicação |
+| `npm run auth:secret` | Gera um segredo seguro para as sessões |
 
 ## Documentação
 
 - [Arquitetura](docs/ARCHITECTURE.md)
 - [Plano de sprints](docs/SPRINTS.md)
 - [Decisões do produto](docs/DECISIONS.md)
+- [Implantação na Vercel e Neon](docs/DEPLOYMENT.md)
+- [Operação, auditoria e backup](docs/OPERATIONS.md)

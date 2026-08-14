@@ -7,7 +7,7 @@ A aplicação usa Next.js como frontend e backend. O navegador nunca recebe a cr
 ```mermaid
 flowchart LR
   U[Proprietária] --> N[Next.js na Vercel]
-  N --> A[Neon Auth]
+  N --> A[Better Auth]
   N --> D[Neon PostgreSQL]
   N --> B[Vercel Blob]
 ```
@@ -54,6 +54,14 @@ Essas subpastas serão criadas quando houver implementação real, evitando arqu
 | Fiado | Contas a receber, vencimento e pagamentos parciais |
 | Trocas | Itens devolvidos/entregues, prazo, diferença e estoque |
 | Relatórios | Consultas agregadas sem alterar dados operacionais |
+
+## Autenticação
+
+- Better Auth é executado no servidor Next.js e persiste usuários, contas e sessões no próprio PostgreSQL do Neon.
+- Todas as páginas operacionais possuem proteção no `proxy.ts` e validação novamente no layout do servidor.
+- O primeiro cadastro depende de `AUTH_ALLOW_SIGN_UP=true` e o banco impede a criação normal de uma segunda proprietária.
+- Senhas são armazenadas como hashes pelo provedor de autenticação; a aplicação nunca guarda senha em texto.
+- A migração inclui as tabelas `user`, `session`, `account` e `verification`.
 
 ## Consistência transacional
 

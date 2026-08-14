@@ -5,6 +5,7 @@ import {
   CircleDollarSign,
   LayoutDashboard,
   Package,
+  ReceiptText,
   Settings,
   ShoppingBag,
   Users,
@@ -21,6 +22,7 @@ export type NavigationItem = {
 export const navigation: NavigationItem[] = [
   { label: "Início", href: "/inicio", icon: LayoutDashboard },
   { label: "Nova venda", href: "/vendas/nova", icon: ShoppingBag, priority: true },
+  { label: "Vendas", href: "/vendas", icon: ReceiptText },
   { label: "Produtos", href: "/produtos", icon: Package },
   { label: "Estoque", href: "/estoque", icon: Boxes },
   { label: "Caixa", href: "/caixa", icon: CircleDollarSign },

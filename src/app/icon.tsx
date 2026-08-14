@@ -8,9 +8,9 @@ export default function Icon() {
     <div
       style={{
         alignItems: "center",
-        background: "#7c2d4f",
-        borderRadius: 16,
-        color: "white",
+        background: "#000000",
+        borderRadius: 12,
+        color: "#D8A4A8",
         display: "flex",
         fontSize: 30,
         fontWeight: 700,
@@ -19,7 +19,7 @@ export default function Icon() {
         width: "100%",
       }}
     >
-      SM
+      S
     </div>,
     size,
   );

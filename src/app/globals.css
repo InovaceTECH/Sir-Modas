@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f5f2;
-  --foreground: #292524;
+  --background: #fbf7f4;
+  --foreground: #1a1a1a;
   --surface: #ffffff;
-  --muted: #78716c;
-  --border: #e7e1dc;
-  --brand: #7c2d4f;
-  --brand-strong: #5f1f3b;
-  --success: #287451;
+  --muted: #6f6664;
+  --muted-soft: #a49794;
+  --border: #efe7e4;
+  --brand: #d8a4a8;
+  --brand-strong: #c58d92;
+  --brand-deep: #82575b;
+  --brand-subtle: rgba(216, 164, 168, 0.18);
+  --success: #149e61;
+  --success-strong: #026b3f;
   --warning: #a15c16;
 }
 
@@ -17,19 +21,78 @@
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
   --color-muted: var(--muted);
+  --color-muted-soft: var(--muted-soft);
   --color-border: var(--border);
   --color-brand: var(--brand);
   --color-brand-strong: var(--brand-strong);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-subtle: var(--brand-subtle);
   --color-success: var(--success);
+  --color-success-strong: var(--success-strong);
   --color-warning: var(--warning);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-montserrat);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-montserrat), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+::selection {
+  background: var(--brand-subtle);
+  color: var(--brand-deep);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(216, 164, 168, 0.3);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .ui-card {
+    @apply rounded-xl border border-border bg-surface;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .ui-input {
+    @apply min-h-11 w-full rounded-lg border border-[#ded6d3] bg-white px-4 text-sm outline-none transition;
+  }
+
+  .ui-input:focus {
+    @apply border-brand ring-3 ring-brand/10;
+  }
+
+  .ui-button-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-black px-5 text-sm font-semibold text-white transition;
+  }
+
+  .ui-button-primary:hover {
+    @apply bg-[#1a1a1a];
+  }
+
+  .ui-button-secondary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand bg-white px-5 text-sm font-semibold text-foreground transition;
+  }
+
+  .ui-button-secondary:hover {
+    @apply bg-[#fff9f8];
+  }
+
+  .ui-card tbody tr {
+    @apply transition-colors;
+  }
+
+  .ui-card tbody tr:hover {
+    background: #fff9f8;
+  }
 }
 
 button,
