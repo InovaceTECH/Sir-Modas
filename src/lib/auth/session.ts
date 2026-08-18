@@ -3,6 +3,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { cache } from "react";
 
 import { getDb } from "@/db";
 import { user } from "@/db/schema";
@@ -38,7 +39,7 @@ async function getLocalDevelopmentSession() {
   };
 }
 
-export async function getCurrentSession() {
+export const getCurrentSession = cache(async function getCurrentSession() {
   if (!getSetupStatus().ready) {
     return null;
   }
@@ -50,9 +51,9 @@ export async function getCurrentSession() {
 
   const { auth } = await import("./server");
   return auth.api.getSession({ headers: requestHeaders });
-}
+});
 
-export async function requireSession() {
+export const requireSession = cache(async function requireSession() {
   if (!getSetupStatus().ready) {
     redirect("/setup");
   }
@@ -64,4 +65,4 @@ export async function requireSession() {
   }
 
   return session;
-}
+});

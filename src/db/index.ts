@@ -10,7 +10,9 @@ import * as schema from "./schema";
 function createDatabase() {
   const { DATABASE_URL } = getDatabaseEnv();
   const client = postgres(DATABASE_URL, {
-    max: process.env.NODE_ENV === "development" ? 5 : 1,
+    max: 3,
+    idle_timeout: 20,
+    connect_timeout: 10,
     prepare: false,
   });
 

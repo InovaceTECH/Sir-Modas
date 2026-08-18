@@ -10,21 +10,22 @@ import { type CustomerActionState, receivePayment } from "../actions/customer-ac
 const initialCustomerActionState: CustomerActionState = { status: "idle" };
 
 export function ReceivablePaymentForm({ receivableId, remainingAmount, cashOpen }: Readonly<{ receivableId: string; remainingAmount: string; cashOpen: boolean }>) {
-  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [state, action, pending] = useActionState(receivePayment, initialCustomerActionState);
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const idempotencyInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (state.status === "success") {
       formRef.current?.reset();
-      setIdempotencyKey(crypto.randomUUID());
+      idempotencyInputRef.current!.value = crypto.randomUUID();
       router.refresh();
     }
   }, [router, state.status]);
 
   return <form ref={formRef} action={action} className="mt-4 rounded-xl border border-border bg-background p-4">
     <input type="hidden" name="receivableId" value={receivableId} />
-    <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
+    <input ref={idempotencyInputRef} type="hidden" name="idempotencyKey" defaultValue={idempotencyKey} />
     <div className="grid gap-3 sm:grid-cols-2">
       <label><span className="text-xs font-semibold text-muted">Valor recebido</span><input name="amount" type="number" min="0.01" max={remainingAmount} step="0.01" required defaultValue={remainingAmount} className="ui-input mt-1.5" /></label>
       <label><span className="text-xs font-semibold text-muted">Forma de pagamento</span><select name="method" className="ui-input mt-1.5"><option value="cash">Dinheiro</option><option value="pix">Pix</option><option value="debit_card">Débito</option><option value="credit_card">Crédito</option></select></label>

@@ -1,18 +1,13 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
+import { cache } from "react";
 
-import { getDb } from "@/db";
-import { stores } from "@/db/schema";
 import { requireSession } from "@/lib/auth/session";
+import { getStoreByOwner } from "@/features/settings/queries/get-store-by-owner";
 
-export async function requireStore() {
+export const requireStore = cache(async function requireStore() {
   const session = await requireSession();
-  const [store] = await getDb()
-    .select()
-    .from(stores)
-    .where(eq(stores.ownerAuthId, session.user.id))
-    .limit(1);
+  const store = await getStoreByOwner(session.user.id);
 
-  return { session, store: store ?? null };
-}
+  return { session, store };
+});
