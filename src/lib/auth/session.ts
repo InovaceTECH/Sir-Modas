@@ -10,10 +10,8 @@ import { getSetupStatus } from "@/lib/env";
 
 import { isLocalAuthBypassEnabled } from "./local-bypass";
 
-async function getLocalDevelopmentSession(requestHeaders: Headers) {
-  const hostname = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? undefined;
-
-  if (!isLocalAuthBypassEnabled(hostname)) return null;
+async function getLocalDevelopmentSession() {
+  if (!isLocalAuthBypassEnabled()) return null;
 
   const [owner] = await getDb()
     .select()
@@ -46,7 +44,7 @@ export async function getCurrentSession() {
   }
 
   const requestHeaders = await headers();
-  const localSession = await getLocalDevelopmentSession(requestHeaders);
+  const localSession = await getLocalDevelopmentSession();
 
   if (localSession) return localSession;
 

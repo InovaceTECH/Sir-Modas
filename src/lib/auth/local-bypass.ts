@@ -1,21 +1,20 @@
 const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 
-function normalizeHostname(hostname: string | undefined) {
-  if (!hostname) return "";
+function hasLoopbackAuthUrl(value: string | undefined) {
+  if (!value) return false;
 
-  const value = hostname.trim().toLowerCase();
-
-  if (value.startsWith("[")) {
-    return value.slice(1, value.indexOf("]"));
+  try {
+    const hostname = new URL(value).hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    return loopbackHosts.has(hostname);
+  } catch {
+    return false;
   }
-
-  return value.split(":")[0];
 }
 
-export function isLocalAuthBypassEnabled(hostname: string | undefined) {
+export function isLocalAuthBypassEnabled() {
   return (
     process.env.NODE_ENV === "development" &&
     process.env.AUTH_BYPASS_LOCAL === "true" &&
-    loopbackHosts.has(normalizeHostname(hostname))
+    hasLoopbackAuthUrl(process.env.BETTER_AUTH_URL)
   );
 }

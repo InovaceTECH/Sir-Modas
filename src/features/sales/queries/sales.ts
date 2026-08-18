@@ -9,7 +9,6 @@ export async function getSaleCatalog(storeId: string) {
   return getDb().select({
     variantId: productVariants.id,
     productName: products.name,
-    productCode: products.internalCode,
     color: productVariants.color,
     size: productVariants.size,
     stock: productVariants.quantityOnHand,

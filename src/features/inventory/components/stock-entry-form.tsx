@@ -6,7 +6,7 @@ import { useActionState, useState } from "react";
 
 import { createStockEntry, initialStockActionState } from "../actions/stock-actions";
 
-type StockOption = { variantId: string; productName: string; productCode: string; color: string; size: string; quantity: number; salePrice: string };
+type StockOption = { variantId: string; productName: string; color: string; size: string; quantity: number; salePrice: string };
 type Item = { key: string; variantId: string; quantity: number; unitCost: number; salePrice: number };
 
 export function StockEntryForm({ options, suppliers }: Readonly<{ options: StockOption[]; suppliers: string[] }>) {

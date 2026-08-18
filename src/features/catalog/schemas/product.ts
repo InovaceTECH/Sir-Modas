@@ -7,7 +7,6 @@ export const productVariantSchema = z.object({
   id: z.string().uuid().optional(),
   color: z.string().trim().min(1, "Informe a cor.").max(60),
   size: z.string().trim().min(1, "Informe o tamanho.").max(30),
-  internalCode: optionalText,
   initialQuantity: z.coerce.number().int().min(0).max(999999),
 });
 
@@ -15,7 +14,6 @@ export const productSchema = z
   .object({
     id: z.string().uuid().optional(),
     name: z.string().trim().min(2, "Informe o nome do produto.").max(160),
-    internalCode: z.string().trim().min(1, "Informe o código.").max(80),
     categoryName: z.string().trim().min(1, "Informe a categoria.").max(80),
     productTypeName: z.string().trim().min(1, "Informe o tipo.").max(80),
     supplierName: optionalText,

@@ -9,7 +9,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/setup", request.url));
   }
 
-  if (isLocalAuthBypassEnabled(request.nextUrl.hostname)) {
+  if (isLocalAuthBypassEnabled()) {
     return NextResponse.next();
   }
 

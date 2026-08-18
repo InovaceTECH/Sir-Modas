@@ -5,25 +5,31 @@ import { isLocalAuthBypassEnabled } from "./local-bypass";
 describe("isLocalAuthBypassEnabled", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("allows the bypass on localhost during development", () => {
+  it.each([
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://[::1]:3000",
+  ])("allows the bypass with the local server URL %s", (authUrl) => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("AUTH_BYPASS_LOCAL", "true");
+    vi.stubEnv("BETTER_AUTH_URL", authUrl);
 
-    expect(isLocalAuthBypassEnabled("localhost:3000")).toBe(true);
-    expect(isLocalAuthBypassEnabled("127.0.0.1:3000")).toBe(true);
+    expect(isLocalAuthBypassEnabled()).toBe(true);
   });
 
   it("never allows the bypass in production", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("AUTH_BYPASS_LOCAL", "true");
+    vi.stubEnv("BETTER_AUTH_URL", "http://127.0.0.1:3000");
 
-    expect(isLocalAuthBypassEnabled("localhost:3000")).toBe(false);
+    expect(isLocalAuthBypassEnabled()).toBe(false);
   });
 
-  it("rejects non-local hosts", () => {
+  it("rejects a non-local server configuration", () => {
     vi.stubEnv("NODE_ENV", "development");
     vi.stubEnv("AUTH_BYPASS_LOCAL", "true");
+    vi.stubEnv("BETTER_AUTH_URL", "https://sir-modas.vercel.app");
 
-    expect(isLocalAuthBypassEnabled("sir-modas.vercel.app")).toBe(false);
+    expect(isLocalAuthBypassEnabled()).toBe(false);
   });
 });

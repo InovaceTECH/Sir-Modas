@@ -19,7 +19,7 @@ Sistema web de gestão operacional e vendas da Sir Modas Store.
 3. Execute `npm run db:seed:local` após criar o perfil local.
 4. Execute `npm run dev`.
 
-Com `AUTH_BYPASS_LOCAL=true`, o perfil da Sir Modas é carregado automaticamente apenas em desenvolvimento e no endereço local.
+Com `AUTH_BYPASS_LOCAL=true` e `BETTER_AUTH_URL` local, o perfil da Sir Modas é carregado automaticamente apenas em desenvolvimento. O comando `npm run dev` limita o servidor a `127.0.0.1`; desative o bypass antes de expor o servidor na rede.
 
 ## Comandos
 

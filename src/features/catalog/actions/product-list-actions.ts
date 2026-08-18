@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { products, productVariants } from "@/db/schema";
 
 import { requireStore } from "../server/store-context";
+import { generateProductCode } from "../product-code";
 
 export async function toggleProductStatus(formData: FormData) {
   const { store } = await requireStore();
@@ -31,7 +32,7 @@ export async function duplicateProduct(formData: FormData) {
     const [copy] = await tx.insert(products).values({
       ...source,
       id: undefined,
-      internalCode: `${source.internalCode}-COPIA-${Date.now().toString().slice(-5)}`,
+      internalCode: generateProductCode(),
       name: `${source.name} (cópia)`,
       active: true,
       createdAt: new Date(),

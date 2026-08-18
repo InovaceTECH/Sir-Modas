@@ -6,7 +6,7 @@ import { useActionState, useState } from "react";
 
 import { createProduct, initialProductFormState, updateProduct } from "../actions/save-product";
 
-type VariantRow = { key: string; id?: string; color: string; size: string; internalCode: string; initialQuantity: number };
+type VariantRow = { key: string; id?: string; color: string; size: string; initialQuantity: number };
 type Option = { id: string; name: string };
 
 export function ProductForm({
@@ -19,7 +19,6 @@ export function ProductForm({
   initial?: {
     id: string;
     name: string;
-    internalCode: string;
     categoryName: string;
     productTypeName: string;
     supplierName: string;
@@ -35,7 +34,7 @@ export function ProductForm({
 }>) {
   const action = mode === "create" ? createProduct : updateProduct;
   const [state, formAction, pending] = useActionState(action, initialProductFormState);
-  const [variants, setVariants] = useState<VariantRow[]>(initial?.variants.map((variant) => ({ ...variant, key: variant.id ?? crypto.randomUUID(), initialQuantity: variant.quantity })) ?? [{ key: "initial", color: "", size: "", internalCode: "", initialQuantity: 0 }]);
+  const [variants, setVariants] = useState<VariantRow[]>(initial?.variants.map((variant) => ({ ...variant, key: variant.id ?? crypto.randomUUID(), initialQuantity: variant.quantity })) ?? [{ key: "initial", color: "", size: "", initialQuantity: 0 }]);
 
   function updateVariant(key: string, field: keyof Omit<VariantRow, "key" | "id">, value: string) {
     setVariants((current) => current.map((variant) => variant.key === key ? { ...variant, [field]: field === "initialQuantity" ? Number(value) : value } : variant));
@@ -44,13 +43,12 @@ export function ProductForm({
   return (
     <form action={formAction} className="space-y-6">
       {initial ? <input type="hidden" name="id" value={initial.id} /> : null}
-      <input type="hidden" name="variants" value={JSON.stringify(variants.map((variant) => ({ id: variant.id, color: variant.color, size: variant.size, internalCode: variant.internalCode, initialQuantity: variant.initialQuantity })))} />
+      <input type="hidden" name="variants" value={JSON.stringify(variants.map((variant) => ({ id: variant.id, color: variant.color, size: variant.size, initialQuantity: variant.initialQuantity })))} />
 
       <section className="ui-card p-5 sm:p-7">
         <h2 className="text-lg font-semibold">Informações do produto</h2>
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
           <Field label="Nome" name="name" defaultValue={initial?.name} required placeholder="Ex.: Camiseta básica" className="sm:col-span-2" />
-          <Field label="Código interno" name="internalCode" defaultValue={initial?.internalCode} required placeholder="EX.: CAM-001" />
           <Field label="Marca (opcional)" name="brand" defaultValue={initial?.brand} placeholder="Ex.: Sir Modas" />
           <Field label="Categoria" name="categoryName" defaultValue={initial?.categoryName} required list="categories" placeholder="Feminino" />
           <Field label="Tipo de produto" name="productTypeName" defaultValue={initial?.productTypeName} required list="product-types" placeholder="Camiseta" />
@@ -68,13 +66,12 @@ export function ProductForm({
       </section>
 
       <section className="ui-card p-5 sm:p-7">
-        <div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold">Tamanhos e cores</h2><p className="mt-1 text-sm text-muted">Cada combinação possui seu próprio saldo.</p></div><button type="button" onClick={() => setVariants((current) => [...current, { key: crypto.randomUUID(), color: "", size: "", internalCode: "", initialQuantity: 0 }])} className="ui-button-secondary min-h-10 px-3"><Plus size={17} /> Adicionar</button></div>
+        <div className="flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold">Tamanhos e cores</h2><p className="mt-1 text-sm text-muted">Cada combinação possui seu próprio saldo.</p></div><button type="button" onClick={() => setVariants((current) => [...current, { key: crypto.randomUUID(), color: "", size: "", initialQuantity: 0 }])} className="ui-button-secondary min-h-10 px-3"><Plus size={17} /> Adicionar</button></div>
         <div className="mt-5 space-y-3">
           {variants.map((variant, index) => (
-            <div key={variant.key} className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[1fr_0.7fr_1fr_0.65fr_auto] sm:items-end">
+            <div key={variant.key} className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-[1fr_0.7fr_0.65fr_auto] sm:items-end">
               <VariantField label="Cor" value={variant.color} onChange={(value) => updateVariant(variant.key, "color", value)} placeholder="Preta" />
               <VariantField label="Tamanho" value={variant.size} onChange={(value) => updateVariant(variant.key, "size", value)} placeholder="M" />
-              <VariantField label="Código (opcional)" value={variant.internalCode} onChange={(value) => updateVariant(variant.key, "internalCode", value)} placeholder="CAM-PRE-M" />
               <VariantField label={variant.id ? "Saldo atual" : "Estoque inicial"} value={String(variant.initialQuantity)} onChange={(value) => updateVariant(variant.key, "initialQuantity", value)} type="number" disabled={Boolean(variant.id)} />
               <button type="button" onClick={() => setVariants((current) => current.filter((item) => item.key !== variant.key))} disabled={variants.length === 1} className="grid size-12 place-items-center rounded-xl text-muted transition hover:bg-red-50 hover:text-red-700 disabled:opacity-30" aria-label={`Remover variação ${index + 1}`}><Trash2 size={18} /></button>
             </div>

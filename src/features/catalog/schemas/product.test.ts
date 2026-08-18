@@ -4,7 +4,6 @@ import { productSchema } from "./product";
 
 const validProduct = {
   name: "Camiseta básica",
-  internalCode: "CAM-001",
   categoryName: "Feminino",
   productTypeName: "Camiseta",
   supplierName: "",
@@ -15,11 +14,15 @@ const validProduct = {
   costPrice: 20,
   salePrice: 49.9,
   minimumStock: 2,
-  variants: [{ color: "Preta", size: "M", internalCode: "", initialQuantity: 3 }],
+  variants: [{ color: "Preta", size: "M", initialQuantity: 3 }],
 };
 
 describe("productSchema", () => {
   it("aceita produto com variações válidas", () => {
+    expect(productSchema.safeParse(validProduct).success).toBe(true);
+  });
+
+  it("não exige código para cadastrar um produto", () => {
     expect(productSchema.safeParse(validProduct).success).toBe(true);
   });
 

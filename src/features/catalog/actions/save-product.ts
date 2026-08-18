@@ -9,6 +9,7 @@ import { categories, productTypes, products, productVariants, stockMovements, su
 
 import { productSchema, type ProductInput } from "../schemas/product";
 import { requireStore } from "../server/store-context";
+import { generateProductCode } from "../product-code";
 
 export type ProductFormState = {
   status: "idle" | "error";
@@ -29,7 +30,6 @@ function readProduct(formData: FormData) {
   const parsed = productSchema.safeParse({
     id: formData.get("id") || undefined,
     name: formData.get("name"),
-    internalCode: formData.get("internalCode"),
     categoryName: formData.get("categoryName"),
     productTypeName: formData.get("productTypeName"),
     supplierName: formData.get("supplierName"),
@@ -74,7 +74,6 @@ async function saveProduct(input: ProductInput, storeId: string) {
       categoryId: category.id,
       productTypeId: productType.id,
       supplierId,
-      internalCode: input.internalCode.toUpperCase(),
       name: input.name,
       description: input.description,
       brand: input.brand,
@@ -87,13 +86,12 @@ async function saveProduct(input: ProductInput, storeId: string) {
     };
 
     if (!input.id) {
-      const [created] = await tx.insert(products).values(productValues).returning({ id: products.id });
+      const [created] = await tx.insert(products).values({ ...productValues, internalCode: generateProductCode() }).returning({ id: products.id });
       for (const variant of input.variants) {
         const [createdVariant] = await tx.insert(productVariants).values({
           productId: created.id,
           color: variant.color,
           size: variant.size,
-          internalCode: variant.internalCode,
           quantityOnHand: variant.initialQuantity,
         }).returning({ id: productVariants.id });
         if (variant.initialQuantity > 0) {
@@ -118,10 +116,10 @@ async function saveProduct(input: ProductInput, storeId: string) {
 
     for (const variant of input.variants) {
       if (variant.id) {
-        await tx.update(productVariants).set({ color: variant.color, size: variant.size, internalCode: variant.internalCode, active: true, updatedAt: new Date() })
+        await tx.update(productVariants).set({ color: variant.color, size: variant.size, active: true, updatedAt: new Date() })
           .where(and(eq(productVariants.id, variant.id), eq(productVariants.productId, input.id)));
       } else {
-        const [createdVariant] = await tx.insert(productVariants).values({ productId: input.id, color: variant.color, size: variant.size, internalCode: variant.internalCode, quantityOnHand: variant.initialQuantity }).returning({ id: productVariants.id });
+        const [createdVariant] = await tx.insert(productVariants).values({ productId: input.id, color: variant.color, size: variant.size, quantityOnHand: variant.initialQuantity }).returning({ id: productVariants.id });
         if (variant.initialQuantity > 0) await tx.insert(stockMovements).values({ storeId, variantId: createdVariant.id, type: "initial", quantityDelta: variant.initialQuantity, quantityBefore: 0, quantityAfter: variant.initialQuantity, reason: "Nova variação do produto" });
       }
     }
@@ -140,7 +138,7 @@ async function executeSave(_state: ProductFormState, formData: FormData): Promis
     await saveProduct(parsed.data, store.id);
   } catch (error) {
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
-    if (code === "23505") return { status: "error", message: "Já existe um produto ou variação com esse código, tamanho ou cor." };
+    if (code === "23505") return { status: "error", message: "Já existe uma variação com essa cor e tamanho." };
     return { status: "error", message: "Não foi possível salvar o produto." };
   }
 

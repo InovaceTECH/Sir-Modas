@@ -20,14 +20,13 @@ export async function getProducts(storeId: string, query = "", status = "active"
   if (status === "active") filters.push(eq(products.active, true));
   if (status === "inactive") filters.push(eq(products.active, false));
   if (query.trim()) {
-    filters.push(or(ilike(products.name, `%${query.trim()}%`), ilike(products.internalCode, `%${query.trim()}%`))!);
+    filters.push(ilike(products.name, `%${query.trim()}%`));
   }
 
   return getDb()
     .select({
       id: products.id,
       name: products.name,
-      internalCode: products.internalCode,
       salePrice: products.salePrice,
       minimumStock: products.minimumStock,
       active: products.active,
@@ -62,7 +61,7 @@ export async function getProduct(storeId: string, productId: string) {
 
 export async function getStockOverview(storeId: string, query = "", status = "all", selections: { category?: string; color?: string; size?: string } = {}) {
   const filters = [eq(products.storeId, storeId), eq(products.active, true), eq(productVariants.active, true)];
-  if (query.trim()) filters.push(or(ilike(products.name, `%${query.trim()}%`), ilike(products.internalCode, `%${query.trim()}%`), ilike(productVariants.color, `%${query.trim()}%`))!);
+  if (query.trim()) filters.push(or(ilike(products.name, `%${query.trim()}%`), ilike(productVariants.color, `%${query.trim()}%`))!);
   if (status === "out") filters.push(eq(productVariants.quantityOnHand, 0));
   if (status === "low") filters.push(sql`${productVariants.quantityOnHand} > 0 and ${productVariants.quantityOnHand} <= ${products.minimumStock}`);
   if (selections.category) filters.push(eq(categories.name, selections.category));
@@ -73,7 +72,6 @@ export async function getStockOverview(storeId: string, query = "", status = "al
     variantId: productVariants.id,
     productId: products.id,
     productName: products.name,
-    productCode: products.internalCode,
     color: productVariants.color,
     size: productVariants.size,
     quantity: productVariants.quantityOnHand,
