@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -30,9 +30,14 @@ function readProduct(formData: FormData) {
   const parsed = productSchema.safeParse({
     id: formData.get("id") || undefined,
     name: formData.get("name"),
+    categoryId: formData.get("categoryId"),
     categoryName: formData.get("categoryName"),
+    productTypeId: formData.get("productTypeId"),
     productTypeName: formData.get("productTypeName"),
+    supplierId: formData.get("supplierId"),
     supplierName: formData.get("supplierName"),
+    supplierPhone: formData.get("supplierPhone"),
+    supplierNotes: formData.get("supplierNotes"),
     brand: formData.get("brand"),
     description: formData.get("description"),
     notes: formData.get("notes"),
@@ -51,20 +56,33 @@ function readProduct(formData: FormData) {
 
 async function saveProduct(input: ProductInput, storeId: string) {
   return getDb().transaction(async (tx) => {
-    const [category] = await tx.insert(categories).values({ storeId, name: input.categoryName })
-      .onConflictDoUpdate({ target: [categories.storeId, categories.name], set: { active: true } })
-      .returning({ id: categories.id });
-    const [productType] = await tx.insert(productTypes).values({ storeId, name: input.productTypeName })
-      .onConflictDoUpdate({ target: [productTypes.storeId, productTypes.name], set: { active: true } })
-      .returning({ id: productTypes.id });
+    const category = input.categoryId
+      ? await tx.query.categories.findFirst({ where: and(eq(categories.id, input.categoryId), eq(categories.storeId, storeId), eq(categories.active, true)), columns: { id: true } })
+      : (await tx.insert(categories).values({ storeId, name: input.categoryName! }).onConflictDoUpdate({ target: [categories.storeId, categories.name], set: { active: true } }).returning({ id: categories.id }))[0];
+    const productType = input.productTypeId
+      ? await tx.query.productTypes.findFirst({ where: and(eq(productTypes.id, input.productTypeId), eq(productTypes.storeId, storeId), eq(productTypes.active, true)), columns: { id: true } })
+      : (await tx.insert(productTypes).values({ storeId, name: input.productTypeName! }).onConflictDoUpdate({ target: [productTypes.storeId, productTypes.name], set: { active: true } }).returning({ id: productTypes.id }))[0];
+    if (!category || !productType) throw new Error("CATALOG_OPTION_NOT_FOUND");
 
     let supplierId: string | null = null;
-    if (input.supplierName) {
+    if (input.supplierId) {
+      const supplier = await tx.query.suppliers.findFirst({
+        where: and(eq(suppliers.id, input.supplierId), eq(suppliers.storeId, storeId), eq(suppliers.active, true)),
+        columns: { id: true },
+      });
+      if (!supplier) throw new Error("CATALOG_OPTION_NOT_FOUND");
+      supplierId = supplier.id;
+    } else if (input.supplierName) {
       const [existing] = await tx.select({ id: suppliers.id }).from(suppliers)
-        .where(and(eq(suppliers.storeId, storeId), eq(suppliers.name, input.supplierName))).limit(1);
+        .where(and(eq(suppliers.storeId, storeId), sql`lower(${suppliers.name}) = lower(${input.supplierName})`)).limit(1);
       if (existing) supplierId = existing.id;
       else {
-        const [created] = await tx.insert(suppliers).values({ storeId, name: input.supplierName }).returning({ id: suppliers.id });
+        const [created] = await tx.insert(suppliers).values({
+          storeId,
+          name: input.supplierName,
+          phone: input.supplierPhone,
+          notes: input.supplierNotes,
+        }).returning({ id: suppliers.id });
         supplierId = created.id;
       }
     }

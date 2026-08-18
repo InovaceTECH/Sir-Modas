@@ -1,4 +1,4 @@
-import { Copy, PackagePlus, Pencil, Power } from "lucide-react";
+import { Copy, PackagePlus, Pencil, Power, Truck } from "lucide-react";
 import Link from "next/link";
 
 import { PageHeader } from "@/components/layout/page-header";
@@ -16,7 +16,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/produto
   const rows = store ? await getProducts(store.id, query, status) : [];
 
   return <>
-    <PageHeader title="Produtos" description="Catálogo, preços e variações disponíveis." action={<Link href="/produtos/novo" className="ui-button-primary"><PackagePlus size={18} /> Novo produto</Link>} />
+    <PageHeader title="Produtos" description="Catálogo, preços e variações disponíveis." action={<div className="flex flex-wrap gap-2"><Link href="/produtos/fornecedores" className="ui-button-secondary"><Truck size={18} /> Fornecedores</Link><Link href="/produtos/novo" className="ui-button-primary"><PackagePlus size={18} /> Novo produto</Link></div>} />
     {!store ? <section className="ui-card p-6"><h2 className="font-semibold">Configure a loja primeiro</h2><p className="mt-2 text-sm text-muted">Os produtos precisam estar vinculados aos dados da Sir Modas.</p><Link href="/configuracoes" className="ui-button-primary mt-5">Abrir configurações</Link></section> : <>
       <form className="ui-card mb-5 grid gap-3 p-4 sm:grid-cols-[1fr_12rem_auto]">
         <input name="busca" defaultValue={query} className="ui-input" placeholder="Buscar por nome" />

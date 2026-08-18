@@ -15,6 +15,12 @@ export async function getCatalogOptions(storeId: string) {
   return { categories: categoryRows, productTypes: typeRows, suppliers: supplierRows };
 }
 
+export async function getSuppliers(storeId: string) {
+  return getDb().select().from(suppliers)
+    .where(eq(suppliers.storeId, storeId))
+    .orderBy(asc(suppliers.name));
+}
+
 export async function getProducts(storeId: string, query = "", status = "active") {
   const filters = [eq(products.storeId, storeId)];
   if (status === "active") filters.push(eq(products.active, true));
