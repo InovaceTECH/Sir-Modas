@@ -4,7 +4,9 @@ import { LoaderCircle, Save } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { createCustomer, initialCustomerActionState, updateCustomer } from "../actions/customer-actions";
+import { createCustomer, type CustomerActionState, updateCustomer } from "../actions/customer-actions";
+
+const initialCustomerActionState: CustomerActionState = { status: "idle" };
 
 type CustomerInitial = { id: string; name: string; phone: string; birthDate: string; address: string; notes: string };
 

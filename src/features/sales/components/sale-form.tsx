@@ -4,7 +4,9 @@ import { CreditCard, LoaderCircle, Minus, Plus, Search, ShoppingBag, Trash2, Use
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 
-import { createSale, initialSaleActionState } from "../actions/sale-actions";
+import { createSale, type SaleActionState } from "../actions/sale-actions";
+
+const initialSaleActionState: SaleActionState = { status: "idle" };
 
 type CatalogItem = { variantId: string; productName: string; color: string; size: string; stock: number; price: string; category: string | null };
 type CustomerOption = { id: string; name: string; phone: string };

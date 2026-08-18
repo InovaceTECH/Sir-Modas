@@ -4,7 +4,9 @@ import { Ban, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 
-import { cancelSale, initialSaleActionState } from "../actions/sale-actions";
+import { cancelSale, type SaleActionState } from "../actions/sale-actions";
+
+const initialSaleActionState: SaleActionState = { status: "idle" };
 
 export function CancelSaleForm({ saleId }: Readonly<{ saleId: string }>) {
   const [state, action, pending] = useActionState(cancelSale, initialSaleActionState);

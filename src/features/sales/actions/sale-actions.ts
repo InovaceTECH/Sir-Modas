@@ -14,7 +14,6 @@ import { assertPaymentMatchesTotal, fromCents, toCents } from "../domain/money";
 import { cancelSaleSchema, saleSchema } from "../schemas/sale";
 
 export type SaleActionState = { status: "idle" | "success" | "error"; message?: string };
-export const initialSaleActionState: SaleActionState = { status: "idle" };
 
 function parseJson(formData: FormData, key: string) {
   try { return JSON.parse(String(formData.get(key) ?? "[]")); }

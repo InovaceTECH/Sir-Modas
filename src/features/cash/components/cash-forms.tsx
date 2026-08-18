@@ -4,7 +4,9 @@ import { ArrowDownCircle, ArrowUpCircle, LoaderCircle, LockKeyhole, Play, Save }
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 
-import { addCashMovement, closeCash, initialCashActionState, openCash } from "../actions/cash-actions";
+import { addCashMovement, type CashActionState, closeCash, openCash } from "../actions/cash-actions";
+
+const initialCashActionState: CashActionState = { status: "idle" };
 
 function Feedback({ state }: { state: { status: string; message?: string } }) {
   return state.message ? <p role="status" className={state.status === "success" ? "mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-800" : "mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"}>{state.message}</p> : null;

@@ -12,7 +12,6 @@ import { applyReceivablePayment, getReceivableStatus } from "../domain/receivabl
 import { customerSchema, receivablePaymentSchema } from "../schemas/customer";
 
 export type CustomerActionState = { status: "idle" | "success" | "error"; message?: string; errors?: Record<string, string[]> };
-export const initialCustomerActionState: CustomerActionState = { status: "idle" };
 
 function todayInSaoPaulo() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());

@@ -5,6 +5,8 @@ import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { customers, exchanges, receivablePayments, receivables, sales } from "@/db/schema";
 
+const saoPauloToday = sql`(now() at time zone 'America/Sao_Paulo')::date`;
+
 export async function getCustomerOptions(storeId: string) {
   return getDb().select({ id: customers.id, name: customers.name, phone: customers.phone })
     .from(customers).where(eq(customers.storeId, storeId)).orderBy(asc(customers.name));
@@ -14,7 +16,7 @@ export async function getCustomers(storeId: string, query = "", status = "all") 
   const filters = [eq(customers.storeId, storeId)];
   if (query.trim()) filters.push(or(ilike(customers.name, `%${query.trim()}%`), ilike(customers.phone, `%${query.trim()}%`))!);
   if (status === "open") filters.push(sql`exists (select 1 from receivables r where r.customer_id = ${customers.id} and r.status <> 'cancelled' and r.remaining_amount > 0)`);
-  if (status === "overdue") filters.push(sql`exists (select 1 from receivables r where r.customer_id = ${customers.id} and r.status <> 'cancelled' and r.remaining_amount > 0 and r.due_date < current_date)`);
+  if (status === "overdue") filters.push(sql`exists (select 1 from receivables r where r.customer_id = ${customers.id} and r.status <> 'cancelled' and r.remaining_amount > 0 and r.due_date < ${saoPauloToday})`);
 
   return getDb().select({
     id: customers.id,
@@ -24,7 +26,7 @@ export async function getCustomers(storeId: string, query = "", status = "all") 
     purchaseTotal: sql<string>`coalesce((select sum(s.total_amount) from sales s where s.customer_id = ${customers.id} and s.status = 'confirmed'), 0)`,
     saleCount: sql<number>`(select count(*)::int from sales s where s.customer_id = ${customers.id} and s.status = 'confirmed')`,
     openBalance: sql<string>`coalesce((select sum(r.remaining_amount) from receivables r where r.customer_id = ${customers.id} and r.status <> 'cancelled'), 0)`,
-    overdueCount: sql<number>`(select count(*)::int from receivables r where r.customer_id = ${customers.id} and r.status <> 'cancelled' and r.remaining_amount > 0 and r.due_date < current_date)`,
+    overdueCount: sql<number>`(select count(*)::int from receivables r where r.customer_id = ${customers.id} and r.status <> 'cancelled' and r.remaining_amount > 0 and r.due_date < ${saoPauloToday})`,
     lastPurchaseAt: sql<Date | null>`(select max(s.sold_at) from sales s where s.customer_id = ${customers.id} and s.status = 'confirmed')`,
   }).from(customers).where(and(...filters)).orderBy(asc(customers.name)).limit(100);
 }
@@ -53,8 +55,8 @@ export async function getCustomerDetails(storeId: string, customerId: string) {
 export async function getReceivablesSummary(storeId: string) {
   const [summary] = await getDb().select({
     openAmount: sql<string>`coalesce(sum(${receivables.remainingAmount}) filter (where ${receivables.status} <> 'cancelled'), 0)`,
-    overdueAmount: sql<string>`coalesce(sum(${receivables.remainingAmount}) filter (where ${receivables.status} <> 'cancelled' and ${receivables.remainingAmount} > 0 and ${receivables.dueDate} < current_date), 0)`,
-    overdueCount: sql<number>`count(*) filter (where ${receivables.status} <> 'cancelled' and ${receivables.remainingAmount} > 0 and ${receivables.dueDate} < current_date)::int`,
+    overdueAmount: sql<string>`coalesce(sum(${receivables.remainingAmount}) filter (where ${receivables.status} <> 'cancelled' and ${receivables.remainingAmount} > 0 and ${receivables.dueDate} < ${saoPauloToday}), 0)`,
+    overdueCount: sql<number>`count(*) filter (where ${receivables.status} <> 'cancelled' and ${receivables.remainingAmount} > 0 and ${receivables.dueDate} < ${saoPauloToday})::int`,
   }).from(receivables).innerJoin(customers, eq(customers.id, receivables.customerId)).where(eq(customers.storeId, storeId));
   return summary ?? { openAmount: "0", overdueAmount: "0", overdueCount: 0 };
 }

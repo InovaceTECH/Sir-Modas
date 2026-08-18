@@ -4,7 +4,9 @@ import { LoaderCircle, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
-import { createStockEntry, initialStockActionState } from "../actions/stock-actions";
+import { createStockEntry, type StockActionState } from "../actions/stock-actions";
+
+const initialStockActionState: StockActionState = { status: "idle" };
 
 type StockOption = { variantId: string; productName: string; color: string; size: string; quantity: number; salePrice: string };
 type Item = { key: string; variantId: string; quantity: number; unitCost: number; salePrice: number };

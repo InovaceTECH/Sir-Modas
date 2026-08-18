@@ -11,7 +11,6 @@ import { requireStore } from "@/features/catalog/server/store-context";
 import { stockAdjustmentSchema, stockEntrySchema } from "../schemas/stock-operation";
 
 export type StockActionState = { status: "idle" | "error"; message?: string };
-export const initialStockActionState: StockActionState = { status: "idle" };
 
 export async function createStockEntry(_state: StockActionState, formData: FormData): Promise<StockActionState> {
   let items: unknown = [];

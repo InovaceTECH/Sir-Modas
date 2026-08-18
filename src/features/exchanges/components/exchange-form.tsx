@@ -4,8 +4,10 @@ import { ArrowLeftRight, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useMemo, useState } from "react";
 
-import { createExchange, initialExchangeActionState } from "../actions/exchange-actions";
+import { createExchange, type ExchangeActionState } from "../actions/exchange-actions";
 import { exchangeReasons } from "../schemas/exchange";
+
+const initialExchangeActionState: ExchangeActionState = { status: "idle" };
 
 type ReturnableItem = { variantId: string; productName: string; variant: string; unitPrice: string; availableQuantity: number };
 type CatalogItem = { variantId: string; productName: string; color: string; size: string; stock: number; price: string };

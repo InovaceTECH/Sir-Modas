@@ -4,7 +4,9 @@ import { LoaderCircle, Save } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
 
-import { adjustStock, initialStockActionState } from "../actions/stock-actions";
+import { adjustStock, type StockActionState } from "../actions/stock-actions";
+
+const initialStockActionState: StockActionState = { status: "idle" };
 
 export function StockAdjustmentForm({ variant }: Readonly<{ variant: { variantId: string; productName: string; color: string; size: string; quantity: number } }>) {
   const [state, action, pending] = useActionState(adjustStock, initialStockActionState);

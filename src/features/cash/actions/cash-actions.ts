@@ -11,7 +11,6 @@ import { calculateExpectedCash } from "../domain/cash-balance";
 import { cashMovementSchema, closeCashSchema, openCashSchema } from "../schemas/cash-operation";
 
 export type CashActionState = { status: "idle" | "success" | "error"; message?: string };
-export const initialCashActionState: CashActionState = { status: "idle" };
 
 export async function openCash(_state: CashActionState, formData: FormData): Promise<CashActionState> {
   const parsed = openCashSchema.safeParse({ openingAmount: formData.get("openingAmount"), openingNotes: formData.get("openingNotes") });
@@ -33,9 +32,17 @@ export async function addCashMovement(_state: CashActionState, formData: FormDat
   if (!parsed.success) return { status: "error", message: parsed.error.issues[0]?.message ?? "Revise a movimentação." };
   const { store } = await requireStore();
   if (!store) return { status: "error", message: "Loja não configurada." };
-  const [open] = await getDb().select({ id: cashSessions.id }).from(cashSessions).where(and(eq(cashSessions.storeId, store.id), eq(cashSessions.status, "open"))).limit(1);
-  if (!open) return { status: "error", message: "Abra o caixa antes de registrar movimentações." };
-  await getDb().insert(cashMovements).values({ cashSessionId: open.id, type: parsed.data.type, amount: parsed.data.amount.toFixed(2), reason: parsed.data.reason, notes: parsed.data.notes });
+  try {
+    await getDb().transaction(async (tx) => {
+      const [open] = await tx.select({ id: cashSessions.id }).from(cashSessions)
+        .where(and(eq(cashSessions.storeId, store.id), eq(cashSessions.status, "open"))).for("update").limit(1);
+      if (!open) throw new Error("NO_OPEN_CASH");
+      await tx.insert(cashMovements).values({ cashSessionId: open.id, type: parsed.data.type, amount: parsed.data.amount.toFixed(2), reason: parsed.data.reason, notes: parsed.data.notes });
+    }, { isolationLevel: "serializable" });
+  } catch (error) {
+    if (error instanceof Error && error.message === "NO_OPEN_CASH") return { status: "error", message: "Abra o caixa antes de registrar movimentações." };
+    return { status: "error", message: "Não foi possível registrar a movimentação." };
+  }
   revalidatePath("/caixa"); revalidatePath("/inicio");
   return { status: "success", message: "Movimentação registrada." };
 }

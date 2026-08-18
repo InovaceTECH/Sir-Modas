@@ -13,7 +13,6 @@ import { isOutsideExchangeDeadline } from "../domain/exchange";
 import { exchangeSchema } from "../schemas/exchange";
 
 export type ExchangeActionState = { status: "idle" | "error"; message?: string };
-export const initialExchangeActionState: ExchangeActionState = { status: "idle" };
 
 export async function createExchange(_state: ExchangeActionState, formData: FormData): Promise<ExchangeActionState> {
   const parsed = exchangeSchema.safeParse({ saleId: formData.get("saleId"), returnedVariantId: formData.get("returnedVariantId"), returnedQuantity: formData.get("returnedQuantity"), returnedCondition: formData.get("returnedCondition"), deliveredVariantId: formData.get("deliveredVariantId"), deliveredQuantity: formData.get("deliveredQuantity"), reason: formData.get("reason"), paymentMethod: formData.get("paymentMethod") || undefined, notes: formData.get("notes") });

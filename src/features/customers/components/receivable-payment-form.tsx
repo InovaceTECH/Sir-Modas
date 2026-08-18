@@ -3,17 +3,26 @@
 import { Banknote, LoaderCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
-import { initialCustomerActionState, receivePayment } from "../actions/customer-actions";
+import { type CustomerActionState, receivePayment } from "../actions/customer-actions";
+
+const initialCustomerActionState: CustomerActionState = { status: "idle" };
 
 export function ReceivablePaymentForm({ receivableId, remainingAmount, cashOpen }: Readonly<{ receivableId: string; remainingAmount: string; cashOpen: boolean }>) {
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [state, action, pending] = useActionState(receivePayment, initialCustomerActionState);
   const router = useRouter();
-  useEffect(() => { if (state.status === "success") router.refresh(); }, [router, state.status]);
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (state.status === "success") {
+      formRef.current?.reset();
+      setIdempotencyKey(crypto.randomUUID());
+      router.refresh();
+    }
+  }, [router, state.status]);
 
-  return <form action={action} className="mt-4 rounded-xl border border-border bg-background p-4">
+  return <form ref={formRef} action={action} className="mt-4 rounded-xl border border-border bg-background p-4">
     <input type="hidden" name="receivableId" value={receivableId} />
     <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
     <div className="grid gap-3 sm:grid-cols-2">
