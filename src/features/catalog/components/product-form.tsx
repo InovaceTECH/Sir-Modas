@@ -4,12 +4,13 @@ import { LoaderCircle, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
-import { createProduct, initialProductFormState, updateProduct } from "../actions/save-product";
+import { createProduct, type ProductFormState, updateProduct } from "../actions/save-product";
 import { createSizeGrade, standardSizes } from "../product-variants";
 
 type VariantRow = { key: string; id?: string; color: string; size: string; initialQuantity: number };
 type Option = { id: string; name: string };
 const createOptionValue = "__create_new__";
+const initialProductFormState: ProductFormState = { status: "idle" };
 
 export function ProductForm({
   mode,

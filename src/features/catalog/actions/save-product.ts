@@ -17,8 +17,6 @@ export type ProductFormState = {
   errors?: Record<string, string[]>;
 };
 
-export const initialProductFormState: ProductFormState = { status: "idle" };
-
 function readProduct(formData: FormData) {
   let variants: unknown = [];
   try {
