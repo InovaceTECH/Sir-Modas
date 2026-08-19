@@ -1,7 +1,6 @@
 "use client";
 
 import { Banknote, LoaderCircle } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 
@@ -9,7 +8,7 @@ import { type CustomerActionState, receivePayment } from "../actions/customer-ac
 
 const initialCustomerActionState: CustomerActionState = { status: "idle" };
 
-export function ReceivablePaymentForm({ receivableId, remainingAmount, cashOpen }: Readonly<{ receivableId: string; remainingAmount: string; cashOpen: boolean }>) {
+export function ReceivablePaymentForm({ receivableId, remainingAmount }: Readonly<{ receivableId: string; remainingAmount: string }>) {
   const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [state, action, pending] = useActionState(receivePayment, initialCustomerActionState);
   const router = useRouter();
@@ -32,7 +31,6 @@ export function ReceivablePaymentForm({ receivableId, remainingAmount, cashOpen 
       <label className="sm:col-span-2"><span className="text-xs font-semibold text-muted">Observação (opcional)</span><input name="notes" className="ui-input mt-1.5" placeholder="Ex.: primeira parcela" /></label>
     </div>
     {state.message ? <p role="status" className={state.status === "success" ? "mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800" : "mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"}>{state.message}</p> : null}
-    {!cashOpen ? <p className="mt-3 text-sm text-amber-800">O caixa está fechado. <Link href="/caixa" className="font-semibold underline">Abra o caixa</Link> para receber.</p> : null}
-    <button disabled={pending || !cashOpen} className="ui-button-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-45">{pending ? <LoaderCircle className="animate-spin" size={17} /> : <Banknote size={17} />}{pending ? "Registrando..." : "Registrar pagamento"}</button>
+    <button disabled={pending} className="ui-button-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-45">{pending ? <LoaderCircle className="animate-spin" size={17} /> : <Banknote size={17} />}{pending ? "Registrando..." : "Registrar pagamento"}</button>
   </form>;
 }

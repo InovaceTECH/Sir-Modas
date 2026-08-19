@@ -7,8 +7,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
-import { cashMovements, cashSessions, customers, products, productVariants, receivables, saleItems, salePayments, sales, stockMovements } from "@/db/schema";
+import { cashMovements, customers, products, productVariants, receivables, saleItems, salePayments, sales, stockMovements } from "@/db/schema";
 import { requireStore } from "@/features/catalog/server/store-context";
+import { getAutomaticCashSessionId } from "@/features/cash/server/automatic-session";
 
 import { assertPaymentMatchesTotal, fromCents, toCents } from "../domain/money";
 import { cancelSaleSchema, saleSchema } from "../schemas/sale";
@@ -33,10 +34,8 @@ export async function createSale(_state: SaleActionState, formData: FormData): P
 
   let saleId = "";
   try {
+    const cashSessionId = await getAutomaticCashSessionId(store.id);
     await getDb().transaction(async (tx) => {
-      const [cash] = await tx.select().from(cashSessions).where(and(eq(cashSessions.storeId, store.id), eq(cashSessions.status, "open"))).for("update").limit(1);
-      if (!cash) throw new Error("NO_OPEN_CASH");
-
       if (parsed.data.customerId) {
         const [customer] = await tx.select({ id: customers.id }).from(customers).where(and(eq(customers.id, parsed.data.customerId), eq(customers.storeId, store.id))).limit(1);
         if (!customer) throw new Error("INVALID_CUSTOMER");
@@ -61,7 +60,7 @@ export async function createSale(_state: SaleActionState, formData: FormData): P
       const paymentCents = parsed.data.payments.reduce((sum, payment) => sum + toCents(payment.amount), 0);
       assertPaymentMatchesTotal(totalCents, paymentCents);
 
-      const [sale] = await tx.insert(sales).values({ storeId: store.id, cashSessionId: cash.id, customerId: parsed.data.customerId, number: makeSaleNumber(), source: parsed.data.source, subtotal: fromCents(subtotalCents), discountAmount: fromCents(discountCents), totalAmount: fromCents(totalCents), notes: parsed.data.notes }).returning({ id: sales.id });
+      const [sale] = await tx.insert(sales).values({ storeId: store.id, cashSessionId, customerId: parsed.data.customerId, number: makeSaleNumber(), source: parsed.data.source, subtotal: fromCents(subtotalCents), discountAmount: fromCents(discountCents), totalAmount: fromCents(totalCents), notes: parsed.data.notes }).returning({ id: sales.id });
       saleId = sale.id;
 
       for (const item of parsed.data.items) {
@@ -77,7 +76,7 @@ export async function createSale(_state: SaleActionState, formData: FormData): P
       for (const payment of parsed.data.payments) {
         await tx.insert(salePayments).values({ saleId: sale.id, method: payment.method, amount: payment.amount.toFixed(2), installments: payment.method === "credit_card" ? payment.installments ?? 1 : null });
         if (payment.method === "on_account") onAccountCents += toCents(payment.amount);
-        else await tx.insert(cashMovements).values({ cashSessionId: cash.id, type: "sale", amount: payment.amount.toFixed(2), paymentMethod: payment.method, reason: "Venda", referenceType: "sale", referenceId: sale.id });
+        else await tx.insert(cashMovements).values({ cashSessionId, type: "sale", amount: payment.amount.toFixed(2), paymentMethod: payment.method, reason: "Venda", referenceType: "sale", referenceId: sale.id });
       }
       if (onAccountCents > 0) {
         if (!parsed.data.customerId || !parsed.data.dueDate) throw new Error("MISSING_RECEIVABLE_DATA");
@@ -86,7 +85,6 @@ export async function createSale(_state: SaleActionState, formData: FormData): P
     }, { isolationLevel: "serializable" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message === "NO_OPEN_CASH") return { status: "error", message: "Abra o caixa antes de registrar uma venda." };
     if (message === "INVALID_CUSTOMER" || message === "MISSING_RECEIVABLE_DATA") return { status: "error", message: "Selecione uma cliente e informe o vencimento para vender no fiado." };
     if (message.startsWith("INSUFFICIENT_STOCK:")) return { status: "error", message: `Estoque insuficiente para ${message.split(":")[1]}.` };
     if (message === "PAYMENT_MISMATCH") return { status: "error", message: "A soma dos pagamentos deve ser igual ao total da venda." };
@@ -107,8 +105,6 @@ export async function cancelSale(_state: SaleActionState, formData: FormData): P
     await getDb().transaction(async (tx) => {
       const [sale] = await tx.select().from(sales).where(and(eq(sales.id, parsed.data.saleId), eq(sales.storeId, store.id))).for("update").limit(1);
       if (!sale || sale.status === "cancelled") throw new Error("INVALID_SALE");
-      const [cash] = await tx.select().from(cashSessions).where(eq(cashSessions.id, sale.cashSessionId)).for("update").limit(1);
-      if (!cash || cash.status !== "open") throw new Error("CASH_CLOSED");
       const accounts = await tx.select().from(receivables).where(eq(receivables.saleId, sale.id)).for("update");
       if (accounts.some((account) => Number(account.paidAmount) > 0)) throw new Error("RECEIVABLE_HAS_PAYMENTS");
       const items = await tx.select().from(saleItems).where(eq(saleItems.saleId, sale.id));
@@ -120,13 +116,12 @@ export async function cancelSale(_state: SaleActionState, formData: FormData): P
         await tx.insert(stockMovements).values({ storeId: store.id, variantId: variant.id, type: "sale_cancellation", quantityDelta: item.quantity, quantityBefore: variant.quantityOnHand, quantityAfter: after, referenceType: "sale", referenceId: sale.id, reason: parsed.data.reason });
       }
       const payments = await tx.select().from(salePayments).where(eq(salePayments.saleId, sale.id));
-      for (const payment of payments) if (payment.method !== "on_account") await tx.insert(cashMovements).values({ cashSessionId: cash.id, type: "cancellation", amount: payment.amount, paymentMethod: payment.method, reason: `Cancelamento ${sale.number}`, referenceType: "sale", referenceId: sale.id, notes: parsed.data.reason });
+      for (const payment of payments) if (payment.method !== "on_account") await tx.insert(cashMovements).values({ cashSessionId: sale.cashSessionId, type: "cancellation", amount: payment.amount, paymentMethod: payment.method, reason: `Cancelamento ${sale.number}`, referenceType: "sale", referenceId: sale.id, notes: parsed.data.reason });
       if (accounts.length) await tx.update(receivables).set({ status: "cancelled" }).where(eq(receivables.saleId, sale.id));
       await tx.update(sales).set({ status: "cancelled", cancelledAt: new Date(), cancellationReason: parsed.data.reason }).where(eq(sales.id, sale.id));
     }, { isolationLevel: "serializable" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message === "CASH_CLOSED") return { status: "error", message: "Não é possível cancelar após o fechamento do caixa da venda." };
     if (message === "RECEIVABLE_HAS_PAYMENTS") return { status: "error", message: "Esta venda fiada já possui recebimentos. Faça o ajuste financeiro antes de cancelar." };
     return { status: "error", message: "Não foi possível cancelar a venda." };
   }

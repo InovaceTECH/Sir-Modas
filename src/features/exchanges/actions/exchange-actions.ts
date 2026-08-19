@@ -5,8 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
-import { cashMovements, cashSessions, exchangeItems, exchanges, products, productVariants, saleItems, sales, stockMovements } from "@/db/schema";
+import { cashMovements, exchangeItems, exchanges, products, productVariants, saleItems, sales, stockMovements } from "@/db/schema";
 import { requireStore } from "@/features/catalog/server/store-context";
+import { getAutomaticCashSessionId } from "@/features/cash/server/automatic-session";
 import { fromCents, toCents } from "@/features/sales/domain/money";
 
 import { isOutsideExchangeDeadline } from "../domain/exchange";
@@ -22,6 +23,7 @@ export async function createExchange(_state: ExchangeActionState, formData: Form
 
   let exchangeId = "";
   try {
+    const cashSessionId = await getAutomaticCashSessionId(store.id);
     await getDb().transaction(async (tx) => {
       const [sale] = await tx.select().from(sales).where(and(eq(sales.id, parsed.data.saleId), eq(sales.storeId, store.id))).for("update").limit(1);
       if (!sale || sale.status !== "confirmed") throw new Error("INVALID_SALE");
@@ -46,12 +48,8 @@ export async function createExchange(_state: ExchangeActionState, formData: Form
 
       const returnedUnitPrice = soldItems[0].unitPrice;
       const differenceCents = toCents(deliveredVariant.price) * parsed.data.deliveredQuantity - toCents(returnedUnitPrice) * parsed.data.returnedQuantity;
-      let cashId: string | null = null;
       if (differenceCents > 0) {
         if (!parsed.data.paymentMethod) throw new Error("MISSING_PAYMENT_METHOD");
-        const [cash] = await tx.select({ id: cashSessions.id }).from(cashSessions).where(and(eq(cashSessions.storeId, store.id), eq(cashSessions.status, "open"))).for("update").limit(1);
-        if (!cash) throw new Error("NO_OPEN_CASH");
-        cashId = cash.id;
       }
 
       const [exchange] = await tx.insert(exchanges).values({ saleId: sale.id, reason: parsed.data.reason, outsideDeadline: isOutsideExchangeDeadline(sale.soldAt, store.exchangeDeadlineDays), differenceAmount: fromCents(differenceCents), notes: parsed.data.notes }).returning({ id: exchanges.id });
@@ -75,13 +73,12 @@ export async function createExchange(_state: ExchangeActionState, formData: Form
       await tx.update(productVariants).set({ quantityOnHand: deliveredAfter, updatedAt: new Date() }).where(eq(productVariants.id, currentDelivered.id));
       await tx.insert(stockMovements).values({ storeId: store.id, variantId: currentDelivered.id, type: "exchange_out", quantityDelta: -parsed.data.deliveredQuantity, quantityBefore: currentDelivered.quantityOnHand, quantityAfter: deliveredAfter, referenceType: "exchange", referenceId: exchange.id, reason: parsed.data.reason });
 
-      if (differenceCents > 0 && cashId && parsed.data.paymentMethod) {
-        await tx.insert(cashMovements).values({ cashSessionId: cashId, type: "adjustment", amount: fromCents(differenceCents), paymentMethod: parsed.data.paymentMethod, reason: "Diferença de troca", referenceType: "exchange", referenceId: exchange.id, notes: parsed.data.notes });
+      if (differenceCents > 0 && parsed.data.paymentMethod) {
+        await tx.insert(cashMovements).values({ cashSessionId, type: "adjustment", amount: fromCents(differenceCents), paymentMethod: parsed.data.paymentMethod, reason: "Diferença de troca", referenceType: "exchange", referenceId: exchange.id, notes: parsed.data.notes });
       }
     }, { isolationLevel: "serializable" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message === "NO_OPEN_CASH") return { status: "error", message: "Abra o caixa antes de receber a diferença da troca." };
     if (message === "MISSING_PAYMENT_METHOD") return { status: "error", message: "Informe como a diferença será paga." };
     if (message === "RETURN_QUANTITY_EXCEEDED") return { status: "error", message: "A quantidade devolvida supera o saldo disponível desta venda." };
     if (message === "INSUFFICIENT_STOCK") return { status: "error", message: "Não há estoque suficiente do novo produto." };

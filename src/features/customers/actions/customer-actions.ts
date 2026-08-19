@@ -5,8 +5,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
-import { cashMovements, cashSessions, customers, receivablePayments, receivables } from "@/db/schema";
+import { cashMovements, customers, receivablePayments, receivables } from "@/db/schema";
 import { requireStore } from "@/features/catalog/server/store-context";
+import { getAutomaticCashSessionId } from "@/features/cash/server/automatic-session";
 
 import { applyReceivablePayment, getReceivableStatus } from "../domain/receivable";
 import { customerSchema, receivablePaymentSchema } from "../schemas/customer";
@@ -47,6 +48,7 @@ export async function receivePayment(_state: CustomerActionState, formData: Form
   if (!store) return { status: "error", message: "Loja não configurada." };
 
   try {
+    const cashSessionId = await getAutomaticCashSessionId(store.id);
     const duplicate = await getDb().transaction(async (tx) => {
       const [existing] = await tx.select({ id: receivablePayments.id }).from(receivablePayments).where(eq(receivablePayments.idempotencyKey, parsed.data.idempotencyKey)).limit(1);
       if (existing) return true;
@@ -54,22 +56,17 @@ export async function receivePayment(_state: CustomerActionState, formData: Form
         .from(receivables).innerJoin(customers, eq(customers.id, receivables.customerId))
         .where(and(eq(receivables.id, parsed.data.receivableId), eq(customers.storeId, store.id))).for("update").limit(1);
       if (!account || account.status === "cancelled" || account.status === "paid") throw new Error("INVALID_RECEIVABLE");
-      const [cash] = await tx.select({ id: cashSessions.id }).from(cashSessions)
-        .where(and(eq(cashSessions.storeId, store.id), eq(cashSessions.status, "open"))).for("update").limit(1);
-      if (!cash) throw new Error("NO_OPEN_CASH");
-
       const next = applyReceivablePayment(account.remainingAmount, account.paidAmount, parsed.data.amount);
       const status = getReceivableStatus(next.remainingAmount, next.paidAmount, account.dueDate, todayInSaoPaulo());
       const [payment] = await tx.insert(receivablePayments).values({ receivableId: account.id, amount: parsed.data.amount.toFixed(2), method: parsed.data.method, idempotencyKey: parsed.data.idempotencyKey, notes: parsed.data.notes }).returning({ id: receivablePayments.id });
       await tx.update(receivables).set({ paidAmount: next.paidAmount, remainingAmount: next.remainingAmount, status }).where(eq(receivables.id, account.id));
-      await tx.insert(cashMovements).values({ cashSessionId: cash.id, type: "receivable_payment", amount: parsed.data.amount.toFixed(2), paymentMethod: parsed.data.method, reason: "Recebimento de fiado", referenceType: "receivable_payment", referenceId: payment.id, notes: parsed.data.notes });
+      await tx.insert(cashMovements).values({ cashSessionId, type: "receivable_payment", amount: parsed.data.amount.toFixed(2), paymentMethod: parsed.data.method, reason: "Recebimento de fiado", referenceType: "receivable_payment", referenceId: payment.id, notes: parsed.data.notes });
       return false;
     }, { isolationLevel: "serializable" });
     revalidatePath("/", "layout");
     return { status: "success", message: duplicate ? "Este recebimento já havia sido registrado." : "Pagamento registrado e lançado no caixa." };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message === "NO_OPEN_CASH") return { status: "error", message: "Abra o caixa antes de receber um pagamento." };
     if (message === "INVALID_PAYMENT_AMOUNT") return { status: "error", message: "O valor deve ser maior que zero e não pode ultrapassar o saldo." };
     if (message === "INVALID_RECEIVABLE") return { status: "error", message: "Esta conta não está disponível para recebimento." };
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";

@@ -43,3 +43,19 @@ export async function getCashHistory(storeId: string, limit = 10) {
     .orderBy(desc(cashSessions.openedAt))
     .limit(limit);
 }
+
+export async function getFinancialMovements(storeId: string, limit = 100) {
+  return getDb().select({
+    id: cashMovements.id,
+    type: cashMovements.type,
+    amount: cashMovements.amount,
+    paymentMethod: cashMovements.paymentMethod,
+    reason: cashMovements.reason,
+    notes: cashMovements.notes,
+    occurredAt: cashMovements.occurredAt,
+  }).from(cashMovements)
+    .innerJoin(cashSessions, eq(cashSessions.id, cashMovements.cashSessionId))
+    .where(eq(cashSessions.storeId, storeId))
+    .orderBy(desc(cashMovements.occurredAt))
+    .limit(limit);
+}
