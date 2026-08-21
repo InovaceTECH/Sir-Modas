@@ -36,11 +36,15 @@ export async function getSales(storeId: string, query = "", status = "all", limi
 export async function getSaleDetails(storeId: string, saleId: string) {
   const [sale] = await getDb().select().from(sales).where(and(eq(sales.id, saleId), eq(sales.storeId, storeId))).limit(1);
   if (!sale) return null;
-  const [items, payments] = await Promise.all([
+  const [items, payments, customerRows] = await Promise.all([
     getDb().select().from(saleItems).where(eq(saleItems.saleId, sale.id)),
     getDb().select().from(salePayments).where(eq(salePayments.saleId, sale.id)),
+    sale.customerId
+      ? getDb().select({ id: customers.id, name: customers.name, phone: customers.phone }).from(customers)
+        .where(and(eq(customers.id, sale.customerId), eq(customers.storeId, storeId))).limit(1)
+      : Promise.resolve([]),
   ]);
-  return { sale, items, payments };
+  return { sale, items, payments, customer: customerRows[0] ?? null };
 }
 
 export async function getSalesSummary(storeId: string, saleIds: string[]) {

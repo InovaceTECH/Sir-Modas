@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, UserRound, XCircle } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -24,7 +24,7 @@ export default async function SaleDetailsPage({ params }: { params: Promise<{ id
   const result = await getSaleDetails(store.id, id);
   if (!result) notFound();
 
-  const { sale, items, payments } = result;
+  const { sale, items, payments, customer } = result;
   const cancelled = sale.status === "cancelled";
 
   return <>
@@ -69,6 +69,10 @@ export default async function SaleDetailsPage({ params }: { params: Promise<{ id
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">Pagamento</p>
             {payments.map((payment) => <div key={payment.id} className="mt-2 flex justify-between text-sm"><span>{paymentLabels[payment.method]}{payment.installments && payment.installments > 1 ? ` · ${payment.installments}x` : ""}</span><strong>{currency.format(Number(payment.amount))}</strong></div>)}
           </div>
+        </article>
+        <article className="ui-card p-5">
+          <div className="flex items-center gap-2"><UserRound size={18} className="text-brand-deep" /><h2 className="font-semibold">Cliente</h2></div>
+          {customer ? <div className="mt-4"><Link href={`/clientes/${customer.id}`} className="font-semibold text-brand-deep hover:underline">{customer.name}</Link><p className="mt-1 text-sm text-muted">{customer.phone}</p></div> : <p className="mt-4 text-sm text-muted">Venda sem cliente vinculada.</p>}
         </article>
         {!cancelled ? <CancelSaleForm saleId={sale.id} /> : null}
       </div>

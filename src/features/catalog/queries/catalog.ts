@@ -21,7 +21,7 @@ export async function getSuppliers(storeId: string) {
     .orderBy(asc(suppliers.name));
 }
 
-export async function getProducts(storeId: string, query = "", status = "active") {
+export async function getProducts(storeId: string, query = "", status = "all") {
   const filters = [eq(products.storeId, storeId)];
   if (status === "active") filters.push(eq(products.active, true));
   if (status === "inactive") filters.push(eq(products.active, false));

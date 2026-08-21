@@ -13,7 +13,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/produto
   const { store } = await requireStore();
   const params = await searchParams;
   const query = typeof params.busca === "string" ? params.busca : "";
-  const status = typeof params.status === "string" ? params.status : "active";
+  const status = typeof params.status === "string" ? params.status : "all";
   const rows = store ? await getProducts(store.id, query, status) : [];
 
   return <>
@@ -21,7 +21,7 @@ export default async function ProductsPage({ searchParams }: PageProps<"/produto
     {!store ? <section className="ui-card p-6"><h2 className="font-semibold">Configure a loja primeiro</h2><p className="mt-2 text-sm text-muted">Os produtos precisam estar vinculados aos dados da Sir Modas.</p><Link href="/configuracoes" className="ui-button-primary mt-5">Abrir configurações</Link></section> : <>
       <form className="ui-card mb-5 grid gap-3 p-4 sm:grid-cols-[1fr_12rem_auto]">
         <label className="relative"><Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={17} /><input name="busca" defaultValue={query} className="ui-input pl-10" placeholder="Nome, categoria ou tipo" /></label>
-        <select name="status" defaultValue={status} className="ui-input"><option value="active">Ativos</option><option value="inactive">Inativos</option><option value="all">Todos</option></select>
+        <select name="status" defaultValue={status} className="ui-input"><option value="all">Todos</option><option value="active">Ativos</option><option value="inactive">Inativos</option></select>
         <button className="ui-button-secondary">Filtrar</button>
       </form>
       <section className="ui-card overflow-hidden">
