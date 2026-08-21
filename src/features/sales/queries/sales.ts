@@ -30,7 +30,17 @@ export async function getSales(storeId: string, query = "", status = "all", limi
     sql`exists (select 1 from ${customers} c where c.id = ${sales.customerId} and c.name ilike ${`%${query.trim()}%`})`,
     sql`exists (select 1 from ${saleItems} i where i.sale_id = ${sales.id} and i.product_name_snapshot ilike ${`%${query.trim()}%`})`,
   )!);
-  return getDb().select().from(sales).where(and(...filters)).orderBy(desc(sales.soldAt)).limit(limit);
+  return getDb().select({
+    id: sales.id,
+    number: sales.number,
+    status: sales.status,
+    source: sales.source,
+    totalAmount: sales.totalAmount,
+    soldAt: sales.soldAt,
+    customerName: customers.name,
+  }).from(sales)
+    .leftJoin(customers, eq(customers.id, sales.customerId))
+    .where(and(...filters)).orderBy(desc(sales.soldAt)).limit(limit);
 }
 
 export async function getSaleDetails(storeId: string, saleId: string) {
