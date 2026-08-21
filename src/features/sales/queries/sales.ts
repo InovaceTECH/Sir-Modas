@@ -1,9 +1,9 @@
 import "server-only";
 
-import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { cashSessions, categories, productVariants, products, saleItems, salePayments, sales } from "@/db/schema";
+import { categories, customers, productVariants, products, saleItems, salePayments, sales } from "@/db/schema";
 
 export async function getSaleCatalog(storeId: string) {
   return getDb().select({
@@ -24,19 +24,23 @@ export async function getSaleCatalog(storeId: string) {
 export async function getSales(storeId: string, query = "", status = "all", limit = 50) {
   const filters = [eq(sales.storeId, storeId)];
   if (status === "confirmed" || status === "cancelled") filters.push(eq(sales.status, status));
-  if (query.trim()) filters.push(or(ilike(sales.number, `%${query.trim()}%`), ilike(sales.source, `%${query.trim()}%`))!);
+  if (query.trim()) filters.push(or(
+    ilike(sales.number, `%${query.trim()}%`),
+    ilike(sales.source, `%${query.trim()}%`),
+    sql`exists (select 1 from ${customers} c where c.id = ${sales.customerId} and c.name ilike ${`%${query.trim()}%`})`,
+    sql`exists (select 1 from ${saleItems} i where i.sale_id = ${sales.id} and i.product_name_snapshot ilike ${`%${query.trim()}%`})`,
+  )!);
   return getDb().select().from(sales).where(and(...filters)).orderBy(desc(sales.soldAt)).limit(limit);
 }
 
 export async function getSaleDetails(storeId: string, saleId: string) {
   const [sale] = await getDb().select().from(sales).where(and(eq(sales.id, saleId), eq(sales.storeId, storeId))).limit(1);
   if (!sale) return null;
-  const [items, payments, cash] = await Promise.all([
+  const [items, payments] = await Promise.all([
     getDb().select().from(saleItems).where(eq(saleItems.saleId, sale.id)),
     getDb().select().from(salePayments).where(eq(salePayments.saleId, sale.id)),
-    getDb().select({ status: cashSessions.status, openedAt: cashSessions.openedAt, closedAt: cashSessions.closedAt }).from(cashSessions).where(eq(cashSessions.id, sale.cashSessionId)).limit(1),
   ]);
-  return { sale, items, payments, cash: cash[0] ?? null };
+  return { sale, items, payments };
 }
 
 export async function getSalesSummary(storeId: string, saleIds: string[]) {

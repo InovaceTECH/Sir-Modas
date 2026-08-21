@@ -12,5 +12,5 @@ export default async function EditCustomerPage({ params }: { params: Promise<{ i
   const result = await getCustomerDetails(store.id, id);
   if (!result) notFound();
   const { customer } = result;
-  return <><PageHeader title="Editar cliente" description="Mantenha telefone, endereço e observações atualizados." /><CustomerForm initial={{ id: customer.id, name: customer.name, phone: customer.phone, birthDate: customer.birthDate ? customer.birthDate.toISOString().slice(0, 10) : "", address: customer.address ?? "", notes: customer.notes ?? "" }} /></>;
+  return <><PageHeader title="Editar cliente" description="Mantenha o nome e o telefone atualizados." /><CustomerForm initial={{ id: customer.id, name: customer.name, phone: customer.phone }} /></>;
 }

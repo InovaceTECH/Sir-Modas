@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronRight, LogOut, Menu, UserRound, X } from "lucide-react";
+import { ChevronRight, LogOut, Menu, UserRound, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -19,8 +19,8 @@ type AppShellProps = Readonly<{
 const byHref = (hrefs: string[]) => navigation.filter((item) => hrefs.includes(item.href));
 const groups = [
   { label: "Principal", items: byHref(["/inicio", "/vendas/nova"]) },
-  { label: "Operação", items: byHref(["/vendas", "/produtos", "/estoque", "/caixa"]) },
-  { label: "Relacionamento", items: byHref(["/clientes", "/trocas"]) },
+  { label: "Dia a dia", items: byHref(["/vendas", "/produtos", "/estoque", "/caixa"]) },
+  { label: "Clientes", items: byHref(["/clientes", "/trocas"]) },
   { label: "Análises", items: byHref(["/relatorios", "/configuracoes"]) },
 ];
 
@@ -78,7 +78,7 @@ export function AppShell({ children, storeName, user }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-background lg:grid lg:grid-cols-[15rem_1fr]">
-      <aside className="hidden bg-black text-white lg:flex lg:flex-col">
+      <aside className="hidden bg-[#111214] text-white lg:flex lg:flex-col">
         <div className="flex justify-center border-b border-white/10 px-5 py-4">
           <Image src="/brand/sir-modas-logo.png" alt="Sir Modas Store" width={800} height={800} priority className="size-36 object-contain" />
         </div>
@@ -96,11 +96,10 @@ export function AppShell({ children, storeName, user }: AppShellProps) {
 
       <div className="min-w-0">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-border bg-white/95 px-4 backdrop-blur lg:px-8">
-          <div className="flex items-center gap-3 lg:hidden"><span className="grid size-9 place-items-center rounded-lg bg-black font-bold text-brand">S</span><div><p className="text-sm font-bold">Sir Modas</p><p className="max-w-44 truncate text-[0.65rem] text-muted">{storeName}</p></div></div>
+          <div className="flex items-center gap-3 lg:hidden"><Image src="/brand/sir-modas-logo.png" alt="Sir Modas" width={80} height={80} className="size-10 rounded-xl object-cover" /><div><p className="text-sm font-bold">Sir Modas</p><p className="max-w-44 truncate text-[0.65rem] text-muted">{storeName}</p></div></div>
           <p className="hidden text-sm font-semibold lg:block">{navigation.find((item) => isNavigationActive(pathname, item.href))?.label ?? "Sir Modas"}</p>
           <div className="flex items-center gap-1">
-            <button className="grid size-10 place-items-center rounded-lg text-muted hover:bg-brand-subtle" aria-label="Notificações"><Bell aria-hidden="true" size={19} /></button>
-            <div className="ml-2 hidden items-center gap-2 border-l border-border pl-4 lg:flex"><span className="grid size-8 place-items-center rounded-full bg-brand text-xs font-bold text-black">{user.name.slice(0, 1).toUpperCase()}</span><span className="max-w-36 truncate text-xs font-semibold">{user.name}</span></div>
+            <div className="hidden items-center gap-2 lg:flex"><span className="grid size-8 place-items-center rounded-full bg-brand text-xs font-bold text-black">{user.name.slice(0, 1).toUpperCase()}</span><span className="max-w-36 truncate text-xs font-semibold">{user.name}</span></div>
             <button onClick={() => setMenuOpen(true)} className="ml-1 grid size-10 place-items-center rounded-lg border border-border lg:hidden" aria-label="Abrir menu"><Menu aria-hidden="true" size={21} /></button>
           </div>
         </header>
@@ -109,7 +108,7 @@ export function AppShell({ children, storeName, user }: AppShellProps) {
           <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu principal">
             <button className="absolute inset-0 bg-black/45" onClick={() => setMenuOpen(false)} aria-label="Fechar menu" />
             <aside className="absolute inset-y-0 right-0 flex w-[min(88vw,21rem)] flex-col bg-white shadow-2xl">
-              <div className="flex items-center justify-between border-b border-border bg-black p-4 text-white"><div><p className="text-sm font-bold text-brand">Sir Modas</p><p className="text-xs text-white/55">{user.name}</p></div><button onClick={() => setMenuOpen(false)} className="grid size-10 place-items-center rounded-lg border border-white/20" aria-label="Fechar menu"><X aria-hidden="true" size={20} /></button></div>
+              <div className="flex items-center justify-between border-b border-border bg-[#111214] p-4 text-white"><div><p className="text-sm font-bold text-brand">Sir Modas</p><p className="text-xs text-white/55">{user.name}</p></div><button onClick={() => setMenuOpen(false)} className="grid size-10 place-items-center rounded-xl border border-white/20" aria-label="Fechar menu"><X aria-hidden="true" size={20} /></button></div>
               <nav className="flex-1 overflow-y-auto p-3"><NavigationLinks onNavigate={() => setMenuOpen(false)} /></nav>
               <div className="border-t border-border p-4"><button onClick={signOut} disabled={signingOut} className="ui-button-secondary w-full"><LogOut aria-hidden="true" size={17} />{signingOut ? "Saindo..." : "Sair do sistema"}</button></div>
             </aside>
@@ -121,7 +120,7 @@ export function AppShell({ children, storeName, user }: AppShellProps) {
         <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-white/96 px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden" aria-label="Atalhos principais">
           {navigation.slice(0, 5).map(({ href, icon: Icon, label, priority }) => {
             const active = isNavigationActive(pathname, href);
-            return <Link key={href} href={href} aria-current={active ? "page" : undefined} className={cn("flex min-h-16 flex-col items-center justify-center gap-1 text-muted", (priority || active) && "text-brand-deep")}><Icon aria-hidden="true" size={19} /><span className="text-[0.64rem] font-medium">{label}</span></Link>;
+            return <Link key={href} href={href} aria-current={active ? "page" : undefined} className={cn("flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl text-muted transition", active && "bg-brand-subtle text-brand-deep", priority && !active && "-mt-3 min-h-20 bg-[#111214] text-white shadow-lg")}><Icon aria-hidden="true" size={priority ? 22 : 19} /><span className="text-[0.64rem] font-semibold">{label}</span></Link>;
           })}
         </nav>
       </div>

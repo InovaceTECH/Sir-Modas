@@ -1,6 +1,6 @@
 "use client";
 
-import { LoaderCircle, Plus, Save, Trash2 } from "lucide-react";
+import { ChevronDown, LoaderCircle, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
@@ -40,6 +40,8 @@ export function ProductForm({
   const [variants, setVariants] = useState<VariantRow[]>(initial?.variants.map((variant) => ({ ...variant, key: variant.id ?? crypto.randomUUID(), initialQuantity: variant.quantity })) ?? [{ key: "initial", color: "", size: "", initialQuantity: 0 }]);
   const [gradeColor, setGradeColor] = useState("");
   const [gradeSizes, setGradeSizes] = useState<string[]>([]);
+  const [showOptionalInfo, setShowOptionalInfo] = useState(Boolean(initial?.brand || initial?.description || initial?.notes || initial?.photoUrl || initial?.supplierId));
+  const formErrors = Object.values(state.errors ?? {}).flatMap((errors) => errors ?? []);
 
   function updateVariant(key: string, field: keyof Omit<VariantRow, "key" | "id">, value: string) {
     setVariants((current) => current.map((variant) => variant.key === key ? { ...variant, [field]: field === "initialQuantity" ? Number(value) : value } : variant));
@@ -71,15 +73,10 @@ export function ProductForm({
           <Field label="Nome" name="name" defaultValue={initial?.name} required placeholder="Ex.: Camiseta básica" className="sm:col-span-2" />
           <CatalogSelect label="Categoria" id="categoryId" name="categoryName" options={options.categories} initialValue={initial?.categoryId} createLabel="Cadastrar nova categoria" placeholder="Ex.: Feminino" />
           <CatalogSelect label="Tipo de produto" id="productTypeId" name="productTypeName" options={options.productTypes} initialValue={initial?.productTypeId} createLabel="Cadastrar novo tipo" placeholder="Ex.: Camiseta" />
-          <Field label="Marca (opcional)" name="brand" defaultValue={initial?.brand} placeholder="Ex.: Sir Modas" />
-          <SupplierSelect options={options.suppliers} initialValue={initial?.supplierId} />
-          <Field label="Estoque mínimo por variação" name="minimumStock" defaultValue={initial?.minimumStock ?? 1} required type="number" min="0" />
-          <Field label="Preço de custo" name="costPrice" defaultValue={initial?.costPrice} required type="number" min="0" step="0.01" placeholder="0,00" />
           <Field label="Preço de venda" name="salePrice" defaultValue={initial?.salePrice} required type="number" min="0.01" step="0.01" placeholder="0,00" />
-          <Field label="Descrição (opcional)" name="description" defaultValue={initial?.description} className="sm:col-span-2" />
-          <Field label="URL da foto (opcional)" name="photoUrl" defaultValue={initial?.photoUrl} type="url" placeholder="https://..." className="sm:col-span-2" />
-          <Field label="Observações (opcional)" name="notes" defaultValue={initial?.notes} className="sm:col-span-2" />
         </div>
+        <button type="button" onClick={() => setShowOptionalInfo((current) => !current)} className="mt-5 flex w-full items-center justify-between rounded-lg border border-border px-4 py-3 text-left text-sm font-semibold text-brand-deep hover:bg-[#fff9f8]" aria-expanded={showOptionalInfo}><span>Adicionar mais informações (opcional)</span><ChevronDown size={18} className={showOptionalInfo ? "rotate-180 transition-transform" : "transition-transform"} /></button>
+        {showOptionalInfo ? <div className="mt-5 grid gap-5 rounded-xl bg-background p-4 sm:grid-cols-2"><Field label="Marca" name="brand" defaultValue={initial?.brand} placeholder="Ex.: Sir Modas" /><SupplierSelect options={options.suppliers} initialValue={initial?.supplierId} /><Field label="Estoque mínimo por variação" name="minimumStock" defaultValue={initial?.minimumStock ?? 1} type="number" min="0" /><Field label="Preço de custo" name="costPrice" defaultValue={initial?.costPrice ?? "0"} type="number" min="0" step="0.01" placeholder="0,00" /><Field label="Descrição" name="description" defaultValue={initial?.description} className="sm:col-span-2" /><Field label="URL da foto" name="photoUrl" defaultValue={initial?.photoUrl} type="url" placeholder="https://..." className="sm:col-span-2" /><Field label="Observações" name="notes" defaultValue={initial?.notes} className="sm:col-span-2" /></div> : <><input type="hidden" name="brand" value={initial?.brand ?? ""} /><input type="hidden" name="supplierId" value={initial?.supplierId ?? ""} /><input type="hidden" name="supplierName" value="" /><input type="hidden" name="supplierPhone" value="" /><input type="hidden" name="supplierNotes" value="" /><input type="hidden" name="minimumStock" value={initial?.minimumStock ?? 1} /><input type="hidden" name="costPrice" value={initial?.costPrice ?? "0"} /><input type="hidden" name="description" value={initial?.description ?? ""} /><input type="hidden" name="photoUrl" value={initial?.photoUrl ?? ""} /><input type="hidden" name="notes" value={initial?.notes ?? ""} /></>}
       </section>
 
       <section className="ui-card p-5 sm:p-7">
@@ -97,7 +94,7 @@ export function ProductForm({
         </div>
       </section>
 
-      {state.message ? <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{state.message}</p> : null}
+      {state.message ? <div role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700"><p className="font-semibold">{state.message}</p>{formErrors.length ? <ul className="mt-2 list-disc space-y-1 pl-5">{[...new Set(formErrors)].map((error) => <li key={error}>{error}</li>)}</ul> : <p className="mt-1">O que você já preencheu continua nesta tela.</p>}</div> : null}
       <div className="flex flex-wrap justify-end gap-3"><Link href="/produtos" className="ui-button-secondary">Cancelar</Link><button disabled={pending} className="ui-button-primary disabled:opacity-60">{pending ? <LoaderCircle className="animate-spin" size={18} /> : <Save size={18} />}{pending ? "Salvando..." : "Salvar produto"}</button></div>
     </form>
   );

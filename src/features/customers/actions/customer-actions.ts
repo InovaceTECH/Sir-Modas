@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -13,25 +13,46 @@ import { applyReceivablePayment, getReceivableStatus } from "../domain/receivabl
 import { customerSchema, receivablePaymentSchema } from "../schemas/customer";
 
 export type CustomerActionState = { status: "idle" | "success" | "error"; message?: string; errors?: Record<string, string[]> };
+export type QuickCustomerResult = { ok: true; customer: { id: string; name: string; phone: string } } | { ok: false; message: string };
 
 function todayInSaoPaulo() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
+function normalizePhone(phone: string) {
+  return phone.replace(/\D/g, "");
+}
+
+async function customerWithSamePhone(storeId: string, phone: string, exceptId?: string) {
+  const conditions = [eq(customers.storeId, storeId), eq(customers.phoneNormalized, normalizePhone(phone))];
+  if (exceptId) conditions.push(ne(customers.id, exceptId));
+  const [existing] = await getDb().select({ id: customers.id, name: customers.name }).from(customers).where(and(...conditions)).limit(1);
+  return existing;
+}
+
 async function saveCustomer(_state: CustomerActionState, formData: FormData): Promise<CustomerActionState> {
-  const parsed = customerSchema.safeParse({ id: formData.get("id") || undefined, name: formData.get("name"), phone: formData.get("phone"), birthDate: formData.get("birthDate"), address: formData.get("address"), notes: formData.get("notes") });
+  const parsed = customerSchema.safeParse({ id: formData.get("id") || undefined, name: formData.get("name"), phone: formData.get("phone") });
   if (!parsed.success) return { status: "error", message: "Revise os dados da cliente.", errors: parsed.error.flatten().fieldErrors };
   const { store } = await requireStore();
   if (!store) return { status: "error", message: "Configure a loja antes de cadastrar clientes." };
-  const values = { name: parsed.data.name, phone: parsed.data.phone, birthDate: parsed.data.birthDate ? new Date(`${parsed.data.birthDate}T12:00:00`) : null, address: parsed.data.address, notes: parsed.data.notes, updatedAt: new Date() };
+  const existing = await customerWithSamePhone(store.id, parsed.data.phone, parsed.data.id);
+  if (existing) return { status: "error", message: `Já existe uma cliente cadastrada com este celular: ${existing.name}.` };
+  const values = { name: parsed.data.name, phone: parsed.data.phone, phoneNormalized: normalizePhone(parsed.data.phone), updatedAt: new Date() };
 
   let customerId = parsed.data.id;
-  if (customerId) {
-    const [updated] = await getDb().update(customers).set(values).where(and(eq(customers.id, customerId), eq(customers.storeId, store.id))).returning({ id: customers.id });
-    if (!updated) return { status: "error", message: "Cliente não encontrada." };
-  } else {
-    const [created] = await getDb().insert(customers).values({ storeId: store.id, ...values }).returning({ id: customers.id });
-    customerId = created.id;
+  try {
+    if (customerId) {
+      const [updated] = await getDb().update(customers).set(values).where(and(eq(customers.id, customerId), eq(customers.storeId, store.id))).returning({ id: customers.id });
+      if (!updated) return { status: "error", message: "Cliente não encontrada." };
+    } else {
+      const [created] = await getDb().insert(customers).values({ storeId: store.id, ...values }).returning({ id: customers.id });
+      customerId = created.id;
+    }
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && String(error.code) === "23505") {
+      return { status: "error", message: "Já existe uma cliente cadastrada com este celular." };
+    }
+    throw error;
   }
   revalidatePath("/clientes");
   revalidatePath("/vendas/nova");
@@ -40,6 +61,27 @@ async function saveCustomer(_state: CustomerActionState, formData: FormData): Pr
 
 export async function createCustomer(state: CustomerActionState, formData: FormData) { return saveCustomer(state, formData); }
 export async function updateCustomer(state: CustomerActionState, formData: FormData) { return saveCustomer(state, formData); }
+
+export async function createQuickCustomer(formData: FormData): Promise<QuickCustomerResult> {
+  const parsed = customerSchema.safeParse({ name: formData.get("name"), phone: formData.get("phone") });
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Revise os dados da cliente." };
+  const { store } = await requireStore();
+  if (!store) return { ok: false, message: "Configure a loja antes de cadastrar clientes." };
+  const existing = await customerWithSamePhone(store.id, parsed.data.phone);
+  if (existing) return { ok: false, message: `${existing.name} já está cadastrada com este celular. Selecione-a na lista.` };
+  let customer: { id: string; name: string; phone: string };
+  try {
+    [customer] = await getDb().insert(customers).values({ storeId: store.id, name: parsed.data.name, phone: parsed.data.phone, phoneNormalized: normalizePhone(parsed.data.phone) }).returning({ id: customers.id, name: customers.name, phone: customers.phone });
+  } catch (error) {
+    if (typeof error === "object" && error && "code" in error && String(error.code) === "23505") {
+      return { ok: false, message: "Este celular já está cadastrado. Selecione a cliente na lista." };
+    }
+    throw error;
+  }
+  revalidatePath("/clientes");
+  revalidatePath("/vendas/nova");
+  return { ok: true, customer };
+}
 
 export async function receivePayment(_state: CustomerActionState, formData: FormData): Promise<CustomerActionState> {
   const parsed = receivablePaymentSchema.safeParse({ receivableId: formData.get("receivableId"), amount: formData.get("amount"), method: formData.get("method"), idempotencyKey: formData.get("idempotencyKey"), notes: formData.get("notes") });

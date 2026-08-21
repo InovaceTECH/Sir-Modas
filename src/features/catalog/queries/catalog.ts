@@ -26,7 +26,7 @@ export async function getProducts(storeId: string, query = "", status = "active"
   if (status === "active") filters.push(eq(products.active, true));
   if (status === "inactive") filters.push(eq(products.active, false));
   if (query.trim()) {
-    filters.push(ilike(products.name, `%${query.trim()}%`));
+    filters.push(or(ilike(products.name, `%${query.trim()}%`), ilike(categories.name, `%${query.trim()}%`), ilike(productTypes.name, `%${query.trim()}%`))!);
   }
 
   return getDb()

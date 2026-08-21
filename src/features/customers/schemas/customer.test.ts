@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import { customerSchema, receivablePaymentSchema } from "./customer";
 
 describe("customerSchema", () => {
-  it("normaliza campos opcionais vazios", () => {
-    const result = customerSchema.parse({ name: "Maria Silva", phone: "11999999999", birthDate: "", address: "", notes: "" });
-    expect(result).toMatchObject({ birthDate: null, address: null, notes: null });
+  it("aceita o cadastro simplificado com nome e celular", () => {
+    const result = customerSchema.parse({ name: " Maria Silva ", phone: " 11999999999 " });
+    expect(result).toEqual({ name: "Maria Silva", phone: "11999999999" });
   });
 
   it("rejeita cliente sem telefone", () => {
-    expect(customerSchema.safeParse({ name: "Maria", phone: "", birthDate: "", address: "", notes: "" }).success).toBe(false);
+    expect(customerSchema.safeParse({ name: "Maria", phone: "" }).success).toBe(false);
   });
 });
 

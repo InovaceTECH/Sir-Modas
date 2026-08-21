@@ -102,6 +102,7 @@ export async function cancelSale(_state: SaleActionState, formData: FormData): P
   const { store } = await requireStore();
   if (!store) return { status: "error", message: "Loja não configurada." };
   try {
+    const cashSessionId = await getAutomaticCashSessionId(store.id);
     await getDb().transaction(async (tx) => {
       const [sale] = await tx.select().from(sales).where(and(eq(sales.id, parsed.data.saleId), eq(sales.storeId, store.id))).for("update").limit(1);
       if (!sale || sale.status === "cancelled") throw new Error("INVALID_SALE");
@@ -116,7 +117,7 @@ export async function cancelSale(_state: SaleActionState, formData: FormData): P
         await tx.insert(stockMovements).values({ storeId: store.id, variantId: variant.id, type: "sale_cancellation", quantityDelta: item.quantity, quantityBefore: variant.quantityOnHand, quantityAfter: after, referenceType: "sale", referenceId: sale.id, reason: parsed.data.reason });
       }
       const payments = await tx.select().from(salePayments).where(eq(salePayments.saleId, sale.id));
-      for (const payment of payments) if (payment.method !== "on_account") await tx.insert(cashMovements).values({ cashSessionId: sale.cashSessionId, type: "cancellation", amount: payment.amount, paymentMethod: payment.method, reason: `Cancelamento ${sale.number}`, referenceType: "sale", referenceId: sale.id, notes: parsed.data.reason });
+      for (const payment of payments) if (payment.method !== "on_account") await tx.insert(cashMovements).values({ cashSessionId, type: "cancellation", amount: payment.amount, paymentMethod: payment.method, reason: `Cancelamento ${sale.number}`, referenceType: "sale", referenceId: sale.id, notes: parsed.data.reason });
       if (accounts.length) await tx.update(receivables).set({ status: "cancelled" }).where(eq(receivables.saleId, sale.id));
       await tx.update(sales).set({ status: "cancelled", cancelledAt: new Date(), cancellationReason: parsed.data.reason }).where(eq(sales.id, sale.id));
     }, { isolationLevel: "serializable" });

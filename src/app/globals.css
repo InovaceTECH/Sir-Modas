@@ -1,19 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fbf7f4;
-  --foreground: #1a1a1a;
-  --surface: #ffffff;
-  --muted: #6f6664;
-  --muted-soft: #a49794;
-  --border: #efe7e4;
-  --brand: #d8a4a8;
-  --brand-strong: #c58d92;
-  --brand-deep: #82575b;
-  --brand-subtle: rgba(216, 164, 168, 0.18);
-  --success: #149e61;
-  --success-strong: #026b3f;
-  --warning: #a15c16;
+  --background: #fff7f2;
+  --foreground: #111214;
+  --surface: #fffdfb;
+  --muted: #6b6763;
+  --muted-soft: #9b908a;
+  --border: #e9d9d2;
+  --brand: #d78a9a;
+  --brand-strong: #c26952;
+  --brand-deep: #9c5368;
+  --brand-subtle: rgba(244, 199, 207, 0.42);
+  --success: #8ca48e;
+  --success-strong: #547457;
+  --warning: #b57c1f;
+  --gold: #d4af37;
 }
 
 @theme inline {
@@ -30,14 +31,14 @@
   --color-success: var(--success);
   --color-success-strong: var(--success-strong);
   --color-warning: var(--warning);
-  --font-sans: var(--font-montserrat);
+  --font-sans: var(--font-poppins);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-montserrat), Arial, Helvetica, sans-serif;
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
 }
 
 h1,
@@ -52,38 +53,40 @@ h3 {
 }
 
 :focus-visible {
-  outline: 3px solid rgba(216, 164, 168, 0.3);
+  outline: 3px solid rgba(215, 138, 154, 0.35);
   outline-offset: 2px;
 }
 
 @layer components {
   .ui-card {
-    @apply rounded-xl border border-border bg-surface;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    @apply rounded-2xl border border-border bg-surface;
+    box-shadow: 0 8px 24px rgba(91, 59, 52, 0.06);
   }
 
   .ui-input {
-    @apply min-h-11 w-full rounded-lg border border-[#ded6d3] bg-white px-4 text-sm outline-none transition;
+    @apply min-h-11 w-full rounded-xl border border-[#dccfc4] bg-white px-4 text-sm outline-none transition;
   }
 
   .ui-input:focus {
-    @apply border-brand ring-3 ring-brand/10;
+    @apply border-brand ring-3 ring-brand/15;
   }
 
   .ui-button-primary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-black px-5 text-sm font-semibold text-white transition;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 text-sm font-semibold text-white transition;
+    background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+    box-shadow: 0 5px 12px rgba(194, 105, 82, 0.2);
   }
 
   .ui-button-primary:hover {
-    @apply bg-[#1a1a1a];
+    filter: brightness(0.94);
   }
 
   .ui-button-secondary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand bg-white px-5 text-sm font-semibold text-foreground transition;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand bg-white px-5 text-sm font-semibold text-foreground transition;
   }
 
   .ui-button-secondary:hover {
-    @apply bg-[#fff9f8];
+    @apply bg-[#fff3f4];
   }
 
   .ui-card tbody tr {
@@ -91,7 +94,7 @@ h3 {
   }
 
   .ui-card tbody tr:hover {
-    background: #fff9f8;
+    background: #fff3f4;
   }
 }
 

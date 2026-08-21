@@ -15,7 +15,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
   const [rows, summary] = store ? await Promise.all([getCustomers(store.id, query, status), getReceivablesSummary(store.id)]) : [[], { openAmount: "0", overdueAmount: "0", overdueCount: 0 }];
 
   return <>
-    <PageHeader title="Clientes e fiado" description="Acompanhe relacionamento, compras e valores a receber." action={<Link href="/clientes/novo" className="ui-button-primary"><Plus size={18} /> Nova cliente</Link>} />
+    <PageHeader title="Clientes" description="Acompanhe compras e valores a receber." action={<Link href="/clientes/novo" className="ui-button-primary"><Plus size={18} /> Nova cliente</Link>} />
     <section className="mb-5 grid gap-4 sm:grid-cols-3">
       <article className="ui-card p-5"><span className="grid size-9 place-items-center rounded-lg bg-brand-subtle text-brand-deep"><Users size={18} /></span><p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Clientes encontradas</p><strong className="mt-1 block text-2xl">{rows.length}</strong></article>
       <article className="ui-card p-5"><span className="grid size-9 place-items-center rounded-lg bg-background text-muted"><CircleDollarSign size={18} /></span><p className="mt-4 text-xs font-semibold uppercase tracking-wide text-muted">Total em aberto</p><strong className="mt-1 block text-2xl">{currency.format(Number(summary.openAmount))}</strong></article>

@@ -48,9 +48,7 @@ export async function createExchange(_state: ExchangeActionState, formData: Form
 
       const returnedUnitPrice = soldItems[0].unitPrice;
       const differenceCents = toCents(deliveredVariant.price) * parsed.data.deliveredQuantity - toCents(returnedUnitPrice) * parsed.data.returnedQuantity;
-      if (differenceCents > 0) {
-        if (!parsed.data.paymentMethod) throw new Error("MISSING_PAYMENT_METHOD");
-      }
+      if (differenceCents !== 0 && !parsed.data.paymentMethod) throw new Error("MISSING_PAYMENT_METHOD");
 
       const [exchange] = await tx.insert(exchanges).values({ saleId: sale.id, reason: parsed.data.reason, outsideDeadline: isOutsideExchangeDeadline(sale.soldAt, store.exchangeDeadlineDays), differenceAmount: fromCents(differenceCents), notes: parsed.data.notes }).returning({ id: exchanges.id });
       exchangeId = exchange.id;
@@ -76,10 +74,13 @@ export async function createExchange(_state: ExchangeActionState, formData: Form
       if (differenceCents > 0 && parsed.data.paymentMethod) {
         await tx.insert(cashMovements).values({ cashSessionId, type: "adjustment", amount: fromCents(differenceCents), paymentMethod: parsed.data.paymentMethod, reason: "Diferença de troca", referenceType: "exchange", referenceId: exchange.id, notes: parsed.data.notes });
       }
+      if (differenceCents < 0 && parsed.data.paymentMethod) {
+        await tx.insert(cashMovements).values({ cashSessionId, type: "withdrawal", amount: fromCents(-differenceCents), paymentMethod: parsed.data.paymentMethod, reason: "Reembolso de troca", referenceType: "exchange", referenceId: exchange.id, notes: parsed.data.notes });
+      }
     }, { isolationLevel: "serializable" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message === "MISSING_PAYMENT_METHOD") return { status: "error", message: "Informe como a diferença será paga." };
+    if (message === "MISSING_PAYMENT_METHOD") return { status: "error", message: "Informe a forma de pagamento ou reembolso da diferença." };
     if (message === "RETURN_QUANTITY_EXCEEDED") return { status: "error", message: "A quantidade devolvida supera o saldo disponível desta venda." };
     if (message === "INSUFFICIENT_STOCK") return { status: "error", message: "Não há estoque suficiente do novo produto." };
     if (message === "ITEM_NOT_FROM_SALE") return { status: "error", message: "O produto devolvido não pertence à venda original." };
