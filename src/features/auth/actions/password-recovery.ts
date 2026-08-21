@@ -1,6 +1,6 @@
 "use server";
 
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 
 import { eq } from "drizzle-orm";
 import { z } from "zod";
@@ -38,7 +38,7 @@ export async function resetOwnerPassword(_state: PasswordRecoveryState, formData
   if (!owner) return { status: "error", message: "A conta da proprietária ainda não foi configurada." };
 
   const token = randomBytes(32).toString("base64url");
-  await getDb().insert(verification).values({ identifier: `reset-password:${token}`, value: owner.id, expiresAt: new Date(Date.now() + 5 * 60 * 1000) });
+  await getDb().insert(verification).values({ id: randomUUID(), identifier: `reset-password:${token}`, value: owner.id, expiresAt: new Date(Date.now() + 5 * 60 * 1000) });
   await auth.api.resetPassword({ body: { newPassword: parsed.data.password, token } });
 
   return { status: "success", message: "Senha redefinida. Entre com a nova senha." };
