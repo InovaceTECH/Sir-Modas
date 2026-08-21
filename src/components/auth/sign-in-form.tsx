@@ -1,6 +1,7 @@
 "use client";
 
 import { Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -50,6 +51,7 @@ export function SignInForm({ returnTo }: Readonly<{ returnTo: string }>) {
         </div>
       </div>
       {error ? <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
+      <Link href="/redefinir-senha" className="block text-right text-sm font-semibold text-brand-deep hover:underline">Esqueci minha senha</Link>
       <button disabled={pending} className="ui-button-primary w-full disabled:cursor-not-allowed disabled:opacity-60">
         {pending ? <LoaderCircle className="animate-spin" aria-hidden="true" size={19} /> : <LogIn aria-hidden="true" size={19} />}
         {pending ? "Entrando..." : "Entrar no sistema"}

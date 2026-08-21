@@ -43,6 +43,11 @@ export function getAuthEnv() {
   };
 }
 
+export function getPasswordRecoveryCode() {
+  const code = process.env.AUTH_PASSWORD_RESET_CODE;
+  return code && code.length >= 16 ? code : null;
+}
+
 export function getSetupStatus() {
   const database = databaseEnvSchema.safeParse({
     DATABASE_URL: process.env.DATABASE_URL,
