@@ -13,8 +13,8 @@
 2. Copie duas conexões no painel **Connect**:
    - conexão **pooled**, usada pela aplicação em `DATABASE_URL`;
    - conexão direta, usada pelas migrations em `DATABASE_URL_UNPOOLED`.
-3. Em um terminal administrativo, defina temporariamente essas variáveis e execute `npm run db:migrate`.
-4. Não execute migrations automaticamente durante cada build da Vercel.
+3. Em um terminal administrativo, defina temporariamente essas variáveis e execute `npm run db:migrate` na primeira publicação.
+4. Nos deploys seguintes, o comando de build aplica as migrations pendentes somente no ambiente de produção da Vercel. Builds de Preview não alteram o banco.
 
 ## 2. Configurar a Vercel
 
@@ -23,12 +23,13 @@ Cadastre em **Settings → Environment Variables**:
 | Variável | Valor de produção |
 | --- | --- |
 | `DATABASE_URL` | Conexão pooled do Neon |
+| `DATABASE_URL_UNPOOLED` | Conexão direta do Neon, usada durante o build para aplicar migrations |
 | `BETTER_AUTH_SECRET` | Segredo aleatório com pelo menos 32 caracteres |
 | `BETTER_AUTH_URL` | URL HTTPS final da aplicação |
 | `AUTH_ALLOW_SIGN_UP` | `true` somente no primeiro cadastro |
 | `AUTH_BYPASS_LOCAL` | `false` |
 
-`DATABASE_URL_UNPOOLED` não é necessária no runtime da aplicação. Mantenha-a apenas no ambiente administrativo que executa migrations.
+Restrinja `DATABASE_URL_UNPOOLED` ao ambiente **Production**. Ela é usada durante o build e não pela aplicação em execução.
 
 ## 3. Criar a proprietária
 
@@ -60,7 +61,7 @@ O importador é repetível: atualiza os dados comerciais do produto, cria soment
 ## Checklist de liberação
 
 - [ ] Banco de produção separado do banco local.
-- [ ] Migrations aplicadas.
+- [ ] `DATABASE_URL_UNPOOLED` configurada somente em Production e migrations aplicadas.
 - [ ] Proprietária criada e cadastro público desativado.
 - [ ] Bypass local desativado.
 - [ ] Todos os fluxos críticos testados.

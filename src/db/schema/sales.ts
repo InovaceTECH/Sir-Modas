@@ -43,6 +43,7 @@ export const sales = pgTable(
     soldAt: timestamp("sold_at", { withTimezone: true }).notNull().defaultNow(),
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     cancellationReason: text("cancellation_reason"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("sales_store_number_uidx").on(table.storeId, table.number),

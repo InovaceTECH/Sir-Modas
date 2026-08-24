@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { products, productVariants, saleItems, sales } from "@/db/schema";
@@ -18,7 +18,7 @@ export async function getDashboardData(storeId: string, period: "today" | "week"
       lowCount: sql<number>`count(*) filter (where ${productVariants.quantityOnHand} > 0 and ${productVariants.quantityOnHand} <= ${products.minimumStock})::int`,
       outCount: sql<number>`count(*) filter (where ${productVariants.quantityOnHand} = 0)::int`,
     }).from(productVariants).innerJoin(products, eq(products.id, productVariants.productId)).where(and(eq(products.storeId, storeId), eq(products.active, true), eq(productVariants.active, true))),
-    getDb().select({ id: sales.id, number: sales.number, total: sales.totalAmount, source: sales.source, soldAt: sales.soldAt }).from(sales).where(and(eq(sales.storeId, storeId), eq(sales.status, "confirmed"))).orderBy(desc(sales.soldAt)).limit(5),
+    getDb().select({ id: sales.id, number: sales.number, total: sales.totalAmount, source: sales.source, soldAt: sales.soldAt }).from(sales).where(and(eq(sales.storeId, storeId), eq(sales.status, "confirmed"), isNull(sales.archivedAt))).orderBy(desc(sales.soldAt)).limit(5),
     getReceivablesSummary(storeId),
   ]);
   const recentIds = recentSales.map((sale) => sale.id);

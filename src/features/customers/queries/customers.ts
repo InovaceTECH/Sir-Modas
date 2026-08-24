@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { customers, exchanges, receivablePayments, receivables, sales } from "@/db/schema";
@@ -38,10 +38,10 @@ export async function getCustomerDetails(storeId: string, customerId: string) {
 
   const [customerSales, customerReceivables, customerExchanges] = await Promise.all([
     getDb().select({ id: sales.id, number: sales.number, totalAmount: sales.totalAmount, status: sales.status, source: sales.source, soldAt: sales.soldAt })
-      .from(sales).where(eq(sales.customerId, customer.id)).orderBy(desc(sales.soldAt)).limit(50),
+      .from(sales).where(and(eq(sales.customerId, customer.id), isNull(sales.archivedAt))).orderBy(desc(sales.soldAt)).limit(50),
     getDb().select({ id: receivables.id, saleId: receivables.saleId, saleNumber: sales.number, originalAmount: receivables.originalAmount, paidAmount: receivables.paidAmount, remainingAmount: receivables.remainingAmount, dueDate: receivables.dueDate, status: receivables.status, notes: receivables.notes, createdAt: receivables.createdAt })
       .from(receivables).innerJoin(sales, eq(sales.id, receivables.saleId))
-      .where(eq(receivables.customerId, customer.id)).orderBy(desc(receivables.createdAt)),
+      .where(and(eq(receivables.customerId, customer.id), isNull(sales.archivedAt))).orderBy(desc(receivables.createdAt)),
     getDb().select({ id: exchanges.id, saleNumber: sales.number, reason: exchanges.reason, differenceAmount: exchanges.differenceAmount, outsideDeadline: exchanges.outsideDeadline, exchangedAt: exchanges.exchangedAt })
       .from(exchanges).innerJoin(sales, eq(sales.id, exchanges.saleId)).where(eq(sales.customerId, customer.id)).orderBy(desc(exchanges.exchangedAt)),
   ]);

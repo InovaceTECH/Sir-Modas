@@ -32,6 +32,7 @@ Com `AUTH_BYPASS_LOCAL=true` e `BETTER_AUTH_URL` local, o perfil da Sir Modas é
 | `npm run check` | Executa lint, testes e build |
 | `npm run db:generate` | Gera migrations a partir do schema |
 | `npm run db:migrate` | Aplica migrations no banco configurado |
+| `npm run db:migrate:deploy` | Aplica migrations somente no deploy de produção da Vercel |
 | `npm run db:studio` | Abre o explorador de dados do Drizzle |
 | `npm run db:seed:local` | Prepara loja, categorias e tipos no banco local |
 | `npm run import:products -- arquivo.csv` | Valida uma carga inicial sem gravar |

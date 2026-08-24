@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { categories, customers, productVariants, products, saleItems, salePayments, sales } from "@/db/schema";
@@ -22,7 +22,7 @@ export async function getSaleCatalog(storeId: string) {
 }
 
 export async function getSales(storeId: string, query = "", status = "all", limit = 50) {
-  const filters = [eq(sales.storeId, storeId)];
+  const filters = [eq(sales.storeId, storeId), isNull(sales.archivedAt)];
   if (status === "confirmed" || status === "cancelled") filters.push(eq(sales.status, status));
   if (query.trim()) filters.push(or(
     ilike(sales.number, `%${query.trim()}%`),

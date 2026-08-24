@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db";
-import { cashMovements, customers, exchanges, products, productVariants, receivablePayments, receivables, saleItems, salePayments, sales, stockMovements } from "@/db/schema";
+import { cashMovements, customers, products, productVariants, receivables, saleItems, salePayments, sales, stockMovements } from "@/db/schema";
 import { requireStore } from "@/features/catalog/server/store-context";
 import { getAutomaticCashSessionId } from "@/features/cash/server/automatic-session";
 
@@ -130,7 +130,7 @@ export async function cancelSale(_state: SaleActionState, formData: FormData): P
   return { status: "success", message: "Venda cancelada. Estoque e financeiro foram estornados." };
 }
 
-export async function deleteCancelledSale(_state: SaleActionState, formData: FormData): Promise<SaleActionState> {
+export async function archiveCancelledSale(_state: SaleActionState, formData: FormData): Promise<SaleActionState> {
   const saleId = String(formData.get("saleId") ?? "");
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(saleId)) {
     return { status: "error", message: "Venda inválida." };
@@ -140,34 +140,17 @@ export async function deleteCancelledSale(_state: SaleActionState, formData: For
 
   try {
     await getDb().transaction(async (tx) => {
-      const [sale] = await tx.select({ id: sales.id, status: sales.status }).from(sales)
+      const [sale] = await tx.select({ id: sales.id, status: sales.status, archivedAt: sales.archivedAt }).from(sales)
         .where(and(eq(sales.id, saleId), eq(sales.storeId, store.id))).for("update").limit(1);
       if (!sale) throw new Error("INVALID_SALE");
       if (sale.status !== "cancelled") throw new Error("SALE_NOT_CANCELLED");
-
-      const saleExchanges = await tx.select({ id: exchanges.id }).from(exchanges).where(eq(exchanges.saleId, sale.id));
-      if (saleExchanges.length) throw new Error("SALE_HAS_EXCHANGES");
-
-      const accounts = await tx.select({ id: receivables.id }).from(receivables).where(eq(receivables.saleId, sale.id));
-      if (accounts.length) {
-        const payments = await tx.select({ id: receivablePayments.id }).from(receivablePayments)
-          .where(inArray(receivablePayments.receivableId, accounts.map((account) => account.id)));
-        if (payments.length) throw new Error("SALE_HAS_RECEIVABLE_PAYMENTS");
-      }
-
-      await tx.delete(cashMovements).where(and(eq(cashMovements.referenceType, "sale"), eq(cashMovements.referenceId, sale.id)));
-      await tx.delete(stockMovements).where(and(eq(stockMovements.referenceType, "sale"), eq(stockMovements.referenceId, sale.id)));
-      await tx.delete(receivables).where(eq(receivables.saleId, sale.id));
-      await tx.delete(salePayments).where(eq(salePayments.saleId, sale.id));
-      await tx.delete(saleItems).where(eq(saleItems.saleId, sale.id));
-      await tx.delete(sales).where(eq(sales.id, sale.id));
+      if (sale.archivedAt) return;
+      await tx.update(sales).set({ archivedAt: new Date() }).where(eq(sales.id, sale.id));
     }, { isolationLevel: "serializable" });
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
-    if (message === "SALE_NOT_CANCELLED") return { status: "error", message: "Cancele a venda antes de excluí-la." };
-    if (message === "SALE_HAS_EXCHANGES") return { status: "error", message: "Esta venda possui trocas e não pode ser excluída." };
-    if (message === "SALE_HAS_RECEIVABLE_PAYMENTS") return { status: "error", message: "Esta venda possui recebimentos e não pode ser excluída." };
-    return { status: "error", message: "Não foi possível excluir a venda." };
+    if (message === "SALE_NOT_CANCELLED") return { status: "error", message: "Cancele a venda antes de removê-la do histórico." };
+    return { status: "error", message: "Não foi possível remover a venda do histórico." };
   }
 
   revalidatePath("/", "layout");

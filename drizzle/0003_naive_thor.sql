@@ -1,4 +1,4 @@
-ALTER TABLE "customers" ADD COLUMN IF NOT EXISTS "phone_normalized" text;--> statement-breakpoint
+UPDATE "customers" SET "phone_normalized" = NULL;--> statement-breakpoint
 WITH ranked_customers AS (
   SELECT
     "id",
@@ -14,6 +14,4 @@ SET "phone_normalized" = ranked_customers.normalized_phone
 FROM ranked_customers
 WHERE customer."id" = ranked_customers."id"
   AND ranked_customers.position = 1;--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "customers_store_phone_normalized_uidx"
-  ON "customers" USING btree ("store_id", "phone_normalized")
-  WHERE "customers"."phone_normalized" IS NOT NULL;
+ALTER TABLE "sales" ADD COLUMN IF NOT EXISTS "archived_at" timestamp with time zone;
