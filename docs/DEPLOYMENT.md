@@ -14,7 +14,7 @@
    - conexão **pooled**, usada pela aplicação em `DATABASE_URL`;
    - conexão direta, usada pelas migrations em `DATABASE_URL_UNPOOLED`.
 3. Em um terminal administrativo, defina temporariamente essas variáveis e execute `npm run db:migrate` na primeira publicação.
-4. Nos deploys seguintes, o comando de build aplica as migrations pendentes somente no ambiente de produção da Vercel. Builds de Preview não alteram o banco.
+4. Nos deploys seguintes, o comando de build aplica as atualizações compatíveis de schema somente no ambiente de produção da Vercel. Builds de Preview não alteram o banco. Para alterações estruturais maiores, continue criando uma migration Drizzle e aplique-a antes da publicação.
 
 ## 2. Configurar a Vercel
 
