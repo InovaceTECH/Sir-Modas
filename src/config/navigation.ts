@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Package,
   ReceiptText,
-  Settings,
   ShoppingBag,
   Users,
   type LucideIcon,
@@ -29,5 +28,4 @@ export const navigation: NavigationItem[] = [
   { label: "Clientes", href: "/clientes", icon: Users },
   { label: "Trocas", href: "/trocas", icon: ArrowLeftRight },
   { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
-  { label: "Configurações", href: "/configuracoes", icon: Settings },
 ];

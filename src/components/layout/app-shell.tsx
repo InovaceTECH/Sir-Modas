@@ -21,7 +21,7 @@ const groups = [
   { label: "Principal", items: byHref(["/inicio", "/vendas/nova"]) },
   { label: "Dia a dia", items: byHref(["/vendas", "/produtos", "/estoque", "/caixa"]) },
   { label: "Clientes", items: byHref(["/clientes", "/trocas"]) },
-  { label: "Análises", items: byHref(["/relatorios", "/configuracoes"]) },
+  { label: "Análises", items: byHref(["/relatorios"]) },
 ];
 
 function isNavigationActive(pathname: string, href: string) {

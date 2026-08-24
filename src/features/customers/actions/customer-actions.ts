@@ -67,20 +67,20 @@ export async function createQuickCustomer(formData: FormData): Promise<QuickCust
   if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Revise os dados da cliente." };
   const { store } = await requireStore();
   if (!store) return { ok: false, message: "Configure a loja antes de cadastrar clientes." };
-  const existing = await customerWithSamePhone(store.id, parsed.data.phone);
-  if (existing) return { ok: false, message: `${existing.name} já está cadastrada com este celular. Selecione-a na lista.` };
-  let customer: { id: string; name: string; phone: string };
   try {
-    [customer] = await getDb().insert(customers).values({ storeId: store.id, name: parsed.data.name, phone: parsed.data.phone, phoneNormalized: normalizePhone(parsed.data.phone) }).returning({ id: customers.id, name: customers.name, phone: customers.phone });
+    const existing = await customerWithSamePhone(store.id, parsed.data.phone);
+    if (existing) return { ok: false, message: `${existing.name} já está cadastrada com este celular. Selecione-a na lista.` };
+    const [customer] = await getDb().insert(customers).values({ storeId: store.id, name: parsed.data.name, phone: parsed.data.phone, phoneNormalized: normalizePhone(parsed.data.phone) }).returning({ id: customers.id, name: customers.name, phone: customers.phone });
+    revalidatePath("/clientes");
+    revalidatePath("/vendas/nova");
+    return { ok: true, customer };
   } catch (error) {
     if (typeof error === "object" && error && "code" in error && String(error.code) === "23505") {
       return { ok: false, message: "Este celular já está cadastrado. Selecione a cliente na lista." };
     }
-    throw error;
+    console.error("Falha ao cadastrar cliente durante a venda", error);
+    return { ok: false, message: "Não foi possível cadastrar a cliente agora. Atualize a página e tente novamente." };
   }
-  revalidatePath("/clientes");
-  revalidatePath("/vendas/nova");
-  return { ok: true, customer };
 }
 
 export async function receivePayment(_state: CustomerActionState, formData: FormData): Promise<CustomerActionState> {

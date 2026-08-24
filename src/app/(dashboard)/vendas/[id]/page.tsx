@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/layout/page-header";
 import { requireStore } from "@/features/catalog/server/store-context";
 import { CancelSaleForm } from "@/features/sales/components/cancel-sale-form";
+import { DeleteSaleForm } from "@/features/sales/components/delete-sale-form";
 import { getSaleDetails } from "@/features/sales/queries/sales";
 
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -74,7 +75,7 @@ export default async function SaleDetailsPage({ params }: { params: Promise<{ id
           <div className="flex items-center gap-2"><UserRound size={18} className="text-brand-deep" /><h2 className="font-semibold">Cliente</h2></div>
           {customer ? <div className="mt-4"><Link href={`/clientes/${customer.id}`} className="font-semibold text-brand-deep hover:underline">{customer.name}</Link><p className="mt-1 text-sm text-muted">{customer.phone}</p></div> : <p className="mt-4 text-sm text-muted">Venda sem cliente vinculada.</p>}
         </article>
-        {!cancelled ? <CancelSaleForm saleId={sale.id} /> : null}
+        {!cancelled ? <CancelSaleForm saleId={sale.id} /> : <DeleteSaleForm saleId={sale.id} />}
       </div>
     </section>
   </>;
