@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -24,7 +24,7 @@ function normalizePhone(phone: string) {
 }
 
 async function customerWithSamePhone(storeId: string, phone: string, exceptId?: string) {
-  const conditions = [eq(customers.storeId, storeId), eq(customers.phoneNormalized, normalizePhone(phone))];
+  const conditions = [eq(customers.storeId, storeId), sql`regexp_replace(${customers.phone}, '[^0-9]', '', 'g') = ${normalizePhone(phone)}`];
   if (exceptId) conditions.push(ne(customers.id, exceptId));
   const [existing] = await getDb().select({ id: customers.id, name: customers.name }).from(customers).where(and(...conditions)).limit(1);
   return existing;
@@ -37,7 +37,7 @@ async function saveCustomer(_state: CustomerActionState, formData: FormData): Pr
   if (!store) return { status: "error", message: "Configure a loja antes de cadastrar clientes." };
   const existing = await customerWithSamePhone(store.id, parsed.data.phone, parsed.data.id);
   if (existing) return { status: "error", message: `Já existe uma cliente cadastrada com este celular: ${existing.name}.` };
-  const values = { name: parsed.data.name, phone: parsed.data.phone, phoneNormalized: normalizePhone(parsed.data.phone), updatedAt: new Date() };
+  const values = { name: parsed.data.name, phone: parsed.data.phone, updatedAt: new Date() };
 
   let customerId = parsed.data.id;
   try {
@@ -70,7 +70,7 @@ export async function createQuickCustomer(formData: FormData): Promise<QuickCust
   try {
     const existing = await customerWithSamePhone(store.id, parsed.data.phone);
     if (existing) return { ok: false, message: `${existing.name} já está cadastrada com este celular. Selecione-a na lista.` };
-    const [customer] = await getDb().insert(customers).values({ storeId: store.id, name: parsed.data.name, phone: parsed.data.phone, phoneNormalized: normalizePhone(parsed.data.phone) }).returning({ id: customers.id, name: customers.name, phone: customers.phone });
+    const [customer] = await getDb().insert(customers).values({ storeId: store.id, name: parsed.data.name, phone: parsed.data.phone }).returning({ id: customers.id, name: customers.name, phone: customers.phone });
     revalidatePath("/clientes");
     revalidatePath("/vendas/nova");
     return { ok: true, customer };
