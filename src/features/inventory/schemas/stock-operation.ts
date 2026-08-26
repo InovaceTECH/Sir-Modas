@@ -9,6 +9,7 @@ export const stockEntrySchema = z.object({
     quantity: z.coerce.number().int().positive().max(999999),
     unitCost: z.coerce.number().min(0).max(999999.99),
     salePrice: z.coerce.number().positive().max(999999.99).optional(),
+    updateSalePrice: z.boolean().optional().default(false),
   })).min(1).max(100),
 });
 

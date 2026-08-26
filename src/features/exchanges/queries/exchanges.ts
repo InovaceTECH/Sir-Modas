@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { customers, exchangeItems, exchanges, productVariants, products, saleItems, sales } from "@/db/schema";
@@ -22,7 +22,7 @@ export async function getExchangeContext(storeId: string, saleId: string) {
     getDb().select({ variantId: exchangeItems.variantId, quantity: exchangeItems.quantity })
       .from(exchangeItems).innerJoin(exchanges, eq(exchanges.id, exchangeItems.exchangeId))
       .where(and(eq(exchanges.saleId, sale.id), eq(exchanges.status, "confirmed"), eq(exchangeItems.direction, "returned"))),
-    getDb().select({ variantId: productVariants.id, productName: products.name, color: productVariants.color, size: productVariants.size, stock: productVariants.quantityOnHand, price: products.salePrice })
+    getDb().select({ variantId: productVariants.id, productName: products.name, color: productVariants.color, size: productVariants.size, stock: productVariants.quantityOnHand, price: sql<string>`coalesce(${productVariants.salePrice}, ${products.salePrice})` })
       .from(productVariants).innerJoin(products, eq(products.id, productVariants.productId))
       .where(and(eq(products.storeId, storeId), eq(products.active, true), eq(productVariants.active, true))).orderBy(products.name, productVariants.color, productVariants.size),
   ]);

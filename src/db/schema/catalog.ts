@@ -86,6 +86,7 @@ export const productVariants = pgTable(
     color: text("color").notNull(),
     size: text("size").notNull(),
     internalCode: text("internal_code"),
+    salePrice: numeric("sale_price", { precision: 12, scale: 2 }),
     quantityOnHand: integer("quantity_on_hand").notNull().default(0),
     active: boolean("active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -98,6 +99,7 @@ export const productVariants = pgTable(
       table.size,
     ),
     index("product_variants_product_idx").on(table.productId),
+    check("product_variants_sale_price_positive", sql`${table.salePrice} is null or ${table.salePrice} > 0`),
     check("product_variants_quantity_nonnegative", sql`${table.quantityOnHand} >= 0`),
   ],
 );

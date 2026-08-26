@@ -2,7 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -42,7 +42,7 @@ export async function createSale(_state: SaleActionState, formData: FormData): P
       }
 
       const requestedIds = parsed.data.items.map((item) => item.variantId);
-      const variants = await tx.select({ id: productVariants.id, stock: productVariants.quantityOnHand, color: productVariants.color, size: productVariants.size, productName: products.name, price: products.salePrice })
+      const variants = await tx.select({ id: productVariants.id, stock: productVariants.quantityOnHand, color: productVariants.color, size: productVariants.size, productName: products.name, price: sql<string>`coalesce(${productVariants.salePrice}, ${products.salePrice})` })
         .from(productVariants).innerJoin(products, eq(products.id, productVariants.productId))
         .where(and(inArray(productVariants.id, requestedIds), eq(products.storeId, store.id), eq(products.active, true), eq(productVariants.active, true))).for("update");
       if (variants.length !== requestedIds.length) throw new Error("INVALID_VARIANT");

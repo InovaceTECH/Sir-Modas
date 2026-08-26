@@ -43,8 +43,8 @@ export async function createStockEntry(_state: StockActionState, formData: FormD
         if (!variant) throw new Error("VARIANT_NOT_FOUND");
         const after = variant.quantity + item.quantity;
         await tx.insert(stockEntryItems).values({ stockEntryId: entry.id, variantId: variant.id, quantity: item.quantity, unitCost: item.unitCost.toFixed(2), salePrice: item.salePrice?.toFixed(2) });
-        await tx.update(productVariants).set({ quantityOnHand: after, updatedAt: new Date() }).where(eq(productVariants.id, variant.id));
-        await tx.update(products).set({ costPrice: item.unitCost.toFixed(2), ...(item.salePrice ? { salePrice: item.salePrice.toFixed(2) } : {}), updatedAt: new Date() }).where(eq(products.id, variant.productId));
+        await tx.update(productVariants).set({ quantityOnHand: after, ...(item.updateSalePrice && item.salePrice ? { salePrice: item.salePrice.toFixed(2) } : {}), updatedAt: new Date() }).where(eq(productVariants.id, variant.id));
+        await tx.update(products).set({ costPrice: item.unitCost.toFixed(2), updatedAt: new Date() }).where(eq(products.id, variant.productId));
         await tx.insert(stockMovements).values({ storeId: store.id, variantId: variant.id, type: "entry", quantityDelta: item.quantity, quantityBefore: variant.quantity, quantityAfter: after, referenceType: "stock_entry", referenceId: entry.id, reason: parsed.data.documentNumber ? `Entrada ${parsed.data.documentNumber}` : "Entrada de mercadoria" });
       }
     }, { isolationLevel: "serializable" });

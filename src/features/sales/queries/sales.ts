@@ -12,7 +12,7 @@ export async function getSaleCatalog(storeId: string) {
     color: productVariants.color,
     size: productVariants.size,
     stock: productVariants.quantityOnHand,
-    price: products.salePrice,
+    price: sql<string>`coalesce(${productVariants.salePrice}, ${products.salePrice})`,
     category: categories.name,
   }).from(productVariants)
     .innerJoin(products, eq(products.id, productVariants.productId))

@@ -38,7 +38,7 @@ export async function duplicateProduct(formData: FormData) {
       createdAt: new Date(),
       updatedAt: new Date(),
     }).returning({ id: products.id });
-    if (variants.length) await tx.insert(productVariants).values(variants.map((variant) => ({ productId: copy.id, color: variant.color, size: variant.size, internalCode: null, quantityOnHand: 0 })));
+    if (variants.length) await tx.insert(productVariants).values(variants.map((variant) => ({ productId: copy.id, color: variant.color, size: variant.size, internalCode: null, salePrice: variant.salePrice, quantityOnHand: 0 })));
   });
   revalidatePath("/produtos");
 }

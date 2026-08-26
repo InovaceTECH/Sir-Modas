@@ -108,6 +108,7 @@ async function saveProduct(input: ProductInput, storeId: string) {
           productId: created.id,
           color: variant.color,
           size: variant.size,
+          salePrice: variant.salePrice?.toFixed(2) ?? null,
           quantityOnHand: variant.initialQuantity,
         }).returning({ id: productVariants.id });
         if (variant.initialQuantity > 0) {
@@ -132,10 +133,38 @@ async function saveProduct(input: ProductInput, storeId: string) {
 
     for (const variant of input.variants) {
       if (variant.id) {
-        await tx.update(productVariants).set({ color: variant.color, size: variant.size, active: true, updatedAt: new Date() })
-          .where(and(eq(productVariants.id, variant.id), eq(productVariants.productId, input.id)));
+        const [currentVariant] = await tx.select({ id: productVariants.id, quantity: productVariants.quantityOnHand })
+          .from(productVariants)
+          .where(and(eq(productVariants.id, variant.id), eq(productVariants.productId, input.id)))
+          .for("update")
+          .limit(1);
+        if (!currentVariant) throw new Error("VARIANT_NOT_FOUND");
+
+        await tx.update(productVariants).set({
+          color: variant.color,
+          size: variant.size,
+          salePrice: variant.salePrice?.toFixed(2) ?? null,
+          ...(variant.adjustStock ? { quantityOnHand: variant.initialQuantity } : {}),
+          active: true,
+          updatedAt: new Date(),
+        }).where(eq(productVariants.id, currentVariant.id));
+
+        const quantityDelta = variant.initialQuantity - currentVariant.quantity;
+        if (variant.adjustStock && quantityDelta !== 0) {
+          await tx.insert(stockMovements).values({
+            storeId,
+            variantId: currentVariant.id,
+            type: quantityDelta > 0 ? "adjustment_in" : "adjustment_out",
+            quantityDelta,
+            quantityBefore: currentVariant.quantity,
+            quantityAfter: variant.initialQuantity,
+            referenceType: "product_edit",
+            referenceId: input.id,
+            reason: "Ajuste realizado na edição do produto",
+          });
+        }
       } else {
-        const [createdVariant] = await tx.insert(productVariants).values({ productId: input.id, color: variant.color, size: variant.size, quantityOnHand: variant.initialQuantity }).returning({ id: productVariants.id });
+        const [createdVariant] = await tx.insert(productVariants).values({ productId: input.id, color: variant.color, size: variant.size, salePrice: variant.salePrice?.toFixed(2) ?? null, quantityOnHand: variant.initialQuantity }).returning({ id: productVariants.id });
         if (variant.initialQuantity > 0) await tx.insert(stockMovements).values({ storeId, variantId: createdVariant.id, type: "initial", quantityDelta: variant.initialQuantity, quantityBefore: 0, quantityAfter: variant.initialQuantity, reason: "Nova variação do produto" });
       }
     }

@@ -24,7 +24,33 @@ const validProduct = {
 
 describe("productSchema", () => {
   it("aceita produto com variações válidas", () => {
-    expect(productSchema.safeParse(validProduct).success).toBe(true);
+    const parsed = productSchema.safeParse(validProduct);
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.variants[0].salePrice).toBeNull();
+      expect(parsed.data.variants[0].adjustStock).toBe(false);
+    }
+  });
+
+  it("aceita preço específico opcional por variação", () => {
+    const parsed = productSchema.safeParse({ ...validProduct, variants: [{ ...validProduct.variants[0], salePrice: "59.90" }] });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.variants[0].salePrice).toBe(59.9);
+  });
+
+  it("rejeita preço inválido em uma variação", () => {
+    expect(productSchema.safeParse({ ...validProduct, variants: [{ ...validProduct.variants[0], salePrice: 0 }] }).success).toBe(false);
+  });
+
+  it("aceita marcar uma alteração intencional de estoque", () => {
+    const parsed = productSchema.safeParse({ ...validProduct, variants: [{ ...validProduct.variants[0], initialQuantity: 8, adjustStock: true }] });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.variants[0].adjustStock).toBe(true);
+  });
+
+  it("rejeita estoque vazio em vez de convertê-lo para zero", () => {
+    const parsed = productSchema.safeParse({ ...validProduct, variants: [{ ...validProduct.variants[0], initialQuantity: "", adjustStock: true }] });
+    expect(parsed.success).toBe(false);
   });
 
   it("não exige código para cadastrar um produto", () => {

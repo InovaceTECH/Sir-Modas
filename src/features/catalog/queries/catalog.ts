@@ -33,7 +33,8 @@ export async function getProducts(storeId: string, query = "", status = "all") {
     .select({
       id: products.id,
       name: products.name,
-      salePrice: products.salePrice,
+      minimumSalePrice: sql<string>`min(coalesce(${productVariants.salePrice}, ${products.salePrice}))`,
+      maximumSalePrice: sql<string>`max(coalesce(${productVariants.salePrice}, ${products.salePrice}))`,
       minimumStock: products.minimumStock,
       active: products.active,
       categoryName: categories.name,
@@ -82,7 +83,7 @@ export async function getStockOverview(storeId: string, query = "", status = "al
     size: productVariants.size,
     quantity: productVariants.quantityOnHand,
     minimumStock: products.minimumStock,
-    salePrice: products.salePrice,
+    salePrice: sql<string>`coalesce(${productVariants.salePrice}, ${products.salePrice})`,
     categoryName: categories.name,
   }).from(productVariants)
     .innerJoin(products, eq(products.id, productVariants.productId))

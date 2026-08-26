@@ -3,12 +3,22 @@ import { z } from "zod";
 const optionalText = z.string().trim().transform((value) => value || null);
 const optionalId = z.union([z.string().uuid(), z.literal("")]).transform((value) => value || undefined);
 const money = z.coerce.number().min(0, "Informe um valor válido.").max(999999.99);
+const optionalPositiveMoney = z.preprocess(
+  (value) => value === "" || value === null || value === undefined ? null : value,
+  z.coerce.number().positive("O preço da variação deve ser maior que zero.").max(999999.99).nullable(),
+);
+const stockQuantity = z.preprocess(
+  (value) => value === "" || value === null || value === undefined ? undefined : value,
+  z.coerce.number().int().min(0).max(999999),
+);
 
 export const productVariantSchema = z.object({
   id: z.string().uuid().optional(),
   color: z.string().trim().min(1, "Informe a cor.").max(60),
   size: z.string().trim().min(1, "Informe o tamanho.").max(30),
-  initialQuantity: z.coerce.number().int().min(0).max(999999),
+  salePrice: optionalPositiveMoney,
+  initialQuantity: stockQuantity,
+  adjustStock: z.boolean().optional().default(false),
 });
 
 export const productSchema = z

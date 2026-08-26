@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -28,7 +28,7 @@ export async function createExchange(_state: ExchangeActionState, formData: Form
       const [sale] = await tx.select().from(sales).where(and(eq(sales.id, parsed.data.saleId), eq(sales.storeId, store.id))).for("update").limit(1);
       if (!sale || sale.status !== "confirmed") throw new Error("INVALID_SALE");
 
-      const variants = await tx.select({ id: productVariants.id, stock: productVariants.quantityOnHand, productName: products.name, color: productVariants.color, size: productVariants.size, price: products.salePrice })
+      const variants = await tx.select({ id: productVariants.id, stock: productVariants.quantityOnHand, productName: products.name, color: productVariants.color, size: productVariants.size, price: sql<string>`coalesce(${productVariants.salePrice}, ${products.salePrice})` })
         .from(productVariants).innerJoin(products, eq(products.id, productVariants.productId))
         .where(and(inArray(productVariants.id, [parsed.data.returnedVariantId, parsed.data.deliveredVariantId]), eq(products.storeId, store.id))).for("update");
       const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
